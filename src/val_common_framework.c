@@ -166,3 +166,16 @@ void val_print_regression_report(regre_report_t *regre_report)
     val_printf(ALWAYS, "******* END OF ACS *******\n");
     val_printf(ALWAYS, "\n");
 }
+
+/**
+ *  @brief   -  Copies 'len' bytes from source to destination buffer
+ *  @param   -  dest : Destination buffer
+ *           -  src  : Source buffer
+ *           -  len  : Number of bytes to copy
+ *  @return  -  void
+ */
+void val_mem_copy(char *dest, const char *src, size_t len)
+{
+    for (size_t i = 0; i < len; ++i)
+        dest[i] = src[i];
+}

@@ -8,11 +8,6 @@
 #include "val_common_status.h"
 #include "val_common_log.h"
 
-#ifndef PLATFORM_SHARED_REGION_BASE
-val_test_status_buffer_ts g_status_buffer;
-#define PLATFORM_SHARED_REGION_BASE (&g_status_buffer)
-#endif
-
 static uint64_t width;
 
 /**
@@ -94,34 +89,33 @@ uint32_t val_report_status(void)
     {
         case TEST_PASS:
             state = TEST_PASS;
-            val_printf(ALWAYS, "\nResult => Passed\n");
+            val_printf(ALWAYS, "Result=Passed\n");
             break;
 
         case TEST_FAIL:
             state = TEST_FAIL;
-            val_printf(ALWAYS, "\nResult => Failed (Error code=%d)\n",
+            val_printf(ALWAYS, "Result=Failed (Error code=%d)\n",
                 status_code);
             break;
 
         case TEST_SKIP:
             state = TEST_SKIP;
-            val_printf(ALWAYS, "\nResult => Skipped (Skip code=%d)\n",
+            val_printf(ALWAYS, "Result=Skipped (Skip code=%d)\n",
                 status_code);
             break;
 
         case TEST_ERROR:
             state = TEST_ERROR;
-            val_printf(ALWAYS, "\nResult => Error (Error code=%d)\n",
+            val_printf(ALWAYS, "Result=Error (Error code=%d)\n",
                 status_code);
             break;
         default:
             state = TEST_FAIL;
-            val_printf(ALWAYS, "\nResult => Failed (Error Code=%d)\n",
+            val_printf(ALWAYS, "Result=Failed (Error Code=%d)\n",
                 status_code);
             break;
     }
 
-    val_printf(ALWAYS, "\n");
     val_printf(ALWAYS, "***********************************\n");
     return state;
 }

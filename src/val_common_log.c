@@ -6,6 +6,7 @@
  */
 
 #include "val_common_log.h"
+#include "val_common_framework.h"
 
 static void val_putc(char *c)
 {
@@ -587,16 +588,17 @@ out:
 uint32_t val_printf(print_verbosity_t verbosity, const char *msg, ...)
 {
     size_t chars_written = 0;
-    va_list args;
+    size_t len = log_strnlen_s(msg, LOG_MAX_STRING_LENGTH - 2);
     static bool lastWasNewline = true;
+    char formatted_msg[LOG_MAX_STRING_LENGTH];
+    va_list args;
 
     va_start(args, msg);
+
     if (verbosity >= VERBOSITY)
     {
-
         if (lastWasNewline)
         {
-            val_putc("\r");
             switch (verbosity)
             {
                 case INFO:
@@ -612,33 +614,39 @@ uint32_t val_printf(print_verbosity_t verbosity, const char *msg, ...)
                     break;
 
                 case WARN:
-                    print_raw_string("\tWARN: ");
+                    print_raw_string("\t\tWARN: ");
                     break;
 
                 case ERROR:
-                    print_raw_string("\tERROR: ");
+                    print_raw_string("\t\tERROR: ");
                     break;
 
                 case ALWAYS:
-                    print_raw_string("\t");
+                    print_raw_string("");
                     break;
 
                 default:
-                    chars_written = val_log(msg, args);
-                    return (uint32_t)chars_written;
                     break;
             }
         }
-        chars_written = val_log(msg, args);
 
-        size_t len = log_strnlen_s(msg, LOG_MAX_STRING_LENGTH);
         if (len > 0 && msg[len - 1] == '\n')
-            lastWasNewline = true;
-        else
-            lastWasNewline = false;
+        {
+            val_mem_copy(formatted_msg, msg, len - 1);
+            formatted_msg[len - 1] = '\r';
+            formatted_msg[len] = '\n';
+            formatted_msg[len + 1] = '\0';
 
-        va_end(args);
+            chars_written = val_log(formatted_msg, args);
+            lastWasNewline = true;
+        }
+        else
+        {
+            chars_written = val_log(msg, args);
+            lastWasNewline = false;
+        }
     }
+    va_end(args);
 
     return (uint32_t)chars_written;
 }
