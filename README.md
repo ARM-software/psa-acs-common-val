@@ -10,4 +10,4 @@ Arm Common VAl ACS is distributed under BSD-3-Clause License.
 
 --------------
 
-*Copyright (c) 2024-2025, Arm Limited or its affiliates. All rights reserved.*
+*Copyright (c) 2025, Arm Limited or its affiliates. All rights reserved.*
