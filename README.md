@@ -6,7 +6,7 @@ This Common VAL repository consolidates shared functionalities across the ff-a-a
 
 ## License
 
-Arm Common VAl ACS is distributed under BSD-3-Clause License.
+Arm Common VAL ACS is distributed under BSD-3-Clause License.
 
 --------------
 
