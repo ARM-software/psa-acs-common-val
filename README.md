@@ -1,7 +1,7 @@
 
 # PSA ACS Common Validation Abstraction Layer (Common VAL)
 
-This Common VAL repository consolidates shared functionalities across the ff-a-acs, cca-rmm-acs, and psa-arch-tests ACSs projects. This centralized approach ensures consistent implementation while eliminating redundant efforts among stakeholders. Key functionalities include Logging, Status reporting, Regression report, etc.
+This Common VAL repository consolidates shared functionalities across the ff-a-acs, cca-rmm-acs, and psa-arch-tests ACS projects. This centralized approach ensures consistent implementation while eliminating redundant efforts among stakeholders. Key functionalities include Logging, Status reporting, Regression report, etc.
 
 
 ## License
