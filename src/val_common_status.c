@@ -17,8 +17,22 @@ static uint64_t width;
 **/
 void *val_base_addr_ipa(uint64_t ipa_width)
 {
+    /* Record the IPA width for later base selection */
     width = ipa_width;
-    return ((void *)(uintptr_t)(VAL_NS_SHARED_REGION_IPA_OFFSET | (1ull << (width - 1))));
+
+    /*
+     * Build the shared-region IPA in a uintptr_t-sized integer to avoid
+     * undefined behaviour and non-portable casts. Only set the MSB if it can
+     * be represented in the native pointer width; otherwise, leave it clear.
+     */
+    const unsigned int pointer_bits = (unsigned int)(sizeof(uintptr_t) * 8u);
+    uintptr_t top_bit = 0;
+    if ((ipa_width > 0u) && ((ipa_width - 1u) < pointer_bits)) {
+        top_bit = ((uintptr_t)1u) << (unsigned int)(ipa_width - 1u);
+    }
+
+    const uintptr_t addr = (uintptr_t)VAL_NS_SHARED_REGION_IPA_OFFSET | top_bit;
+    return (void *)addr;
 }
 
 /**
@@ -28,7 +42,8 @@ void *val_base_addr_ipa(uint64_t ipa_width)
 **/
 void *val_get_shared_region_base_pa(void)
 {
-    return ((void *)(PLATFORM_SHARED_REGION_BASE));
+    /* Cast through uintptr_t to be explicit about integer-to-pointer cast */
+    return (void *)(uintptr_t)(PLATFORM_SHARED_REGION_BASE);
 }
 
 /**
@@ -52,8 +67,8 @@ void *val_get_shared_region_base(void)
 void val_set_status(uint32_t status)
 {
     uint8_t state = ((status >> TEST_STATE_SHIFT) & TEST_STATE_MASK);
-    val_test_status_buffer_ts *curr_test_status = (val_get_shared_region_base()
-                                                  + TEST_STATUS_OFFSET);
+    val_test_status_buffer_ts *curr_test_status = (val_test_status_buffer_ts *)
+        ((uint8_t *)val_get_shared_region_base() + (size_t)TEST_STATUS_OFFSET);
 
     curr_test_status->state = state;
     curr_test_status->status_code  = (status & TEST_STATUS_CODE_MASK);
@@ -66,8 +81,8 @@ void val_set_status(uint32_t status)
 **/
 uint32_t val_get_status(void)
 {
-    val_test_status_buffer_ts *curr_test_status = (val_get_shared_region_base()
-                                                   + TEST_STATUS_OFFSET);
+    val_test_status_buffer_ts *curr_test_status = (val_test_status_buffer_ts *)
+        ((uint8_t *)val_get_shared_region_base() + (size_t)TEST_STATUS_OFFSET);
     return (uint32_t)(((curr_test_status->state) << TEST_STATE_SHIFT) |
             (curr_test_status->status_code));
 }
