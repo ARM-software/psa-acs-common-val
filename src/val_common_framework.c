@@ -86,12 +86,34 @@ void val_reset_regression_report(regre_report_t *report)
 **/
 void val_log_final_test_status(test_info_t *test_info, regre_report_t *regre_report)
 {
-    val_printf(INFO, "In val_get_last_run_test_num, test_num=%x\n", test_info->test_num);
-    val_printf(INFO, "suite_num=%x\n", test_info->suite_num);
-    val_printf(INFO, "regre_report.total_pass=%x\n", regre_report->total_pass);
-    val_printf(INFO, "regre_report.total_fail=%x\n", regre_report->total_fail);
-    val_printf(INFO, "regre_report.total_skip=%x\n", regre_report->total_skip);
-    val_printf(INFO, "regre_report.total_error=%x\n", regre_report->total_error);
+    /* Guard against NULL pointers to avoid dereferencing */
+    if (test_info == NULL && regre_report == NULL)
+    {
+        val_printf(ERROR, "val_log_final_test_status: both test_info and regre_report are NULL\n");
+        return;
+    }
+
+    if (test_info != NULL)
+    {
+        val_printf(INFO, "In val_get_last_run_test_num, test_num=%x\n", test_info->test_num);
+        val_printf(INFO, "suite_num=%x\n", test_info->suite_num);
+    }
+    else
+    {
+        val_printf(ERROR, "val_log_final_test_status: test_info is NULL\n");
+    }
+
+    if (regre_report != NULL)
+    {
+        val_printf(INFO, "regre_report.total_pass=%x\n", regre_report->total_pass);
+        val_printf(INFO, "regre_report.total_fail=%x\n", regre_report->total_fail);
+        val_printf(INFO, "regre_report.total_skip=%x\n", regre_report->total_skip);
+        val_printf(INFO, "regre_report.total_error=%x\n", regre_report->total_error);
+    }
+    else
+    {
+        val_printf(ERROR, "val_log_final_test_status: regre_report is NULL\n");
+    }
 }
 
 /**
