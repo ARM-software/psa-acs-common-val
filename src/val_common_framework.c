@@ -157,7 +157,7 @@ void val_print_regression_report(regre_report_t *regre_report)
         (uint32_t)(regre_report->total_pass +
                    regre_report->total_fail +
                    regre_report->total_skip +
-                   regre_report->total_error), 0);
+                   regre_report->total_error));
     val_printf(ALWAYS, "   TOTAL PASSED    : %d\n", regre_report->total_pass);
     val_printf(ALWAYS, "   TOTAL FAILED    : %d\n", regre_report->total_fail);
     val_printf(ALWAYS, "   TOTAL SKIPPED   : %d\n", regre_report->total_skip);

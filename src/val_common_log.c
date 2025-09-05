@@ -585,15 +585,15 @@ out:
  *             - ...        : ellipses for variadic args
  *   @return   - SUCCESS((Any positive number for character written)/FAILURE(0)
  **/
-uint32_t val_printf(print_verbosity_t verbosity, const char *msg, ...)
+uint32_t val_printf(print_verbosity_t verbosity, const char *fmt, ...)
 {
     size_t chars_written = 0;
-    size_t len = log_strnlen_s(msg, LOG_MAX_STRING_LENGTH - 2);
+    size_t len = log_strnlen_s(fmt, LOG_MAX_STRING_LENGTH - 2);
     static bool lastWasNewline = true;
     char formatted_msg[LOG_MAX_STRING_LENGTH];
     va_list args;
 
-    va_start(args, msg);
+    va_start(args, fmt);
 
     if (verbosity >= VERBOSITY)
     {
@@ -630,10 +630,10 @@ uint32_t val_printf(print_verbosity_t verbosity, const char *msg, ...)
             }
         }
 
-        if (len > 0 && msg[len - 1] == '\n')
+        if (len > 0 && fmt[len - 1] == '\n')
         {
             /* Copy message excluding trailing '\n', then append "\r\n" and NUL. */
-            size_t copied = val_mem_copy(formatted_msg, sizeof(formatted_msg), msg, len - 1);
+            size_t copied = val_mem_copy(formatted_msg, sizeof(formatted_msg), fmt, len - 1);
             /* Ensure there is room for CRLF and NUL; truncate gracefully if needed. */
             size_t tail = copied;
             if (tail + 2 < sizeof(formatted_msg)) {
@@ -651,7 +651,7 @@ uint32_t val_printf(print_verbosity_t verbosity, const char *msg, ...)
         }
         else
         {
-            chars_written = val_log(msg, args);
+            chars_written = val_log(fmt, args);
             lastWasNewline = false;
         }
     }
