@@ -6,6 +6,8 @@
  */
 
 #include "val_common_peripherals.h"
+#include <stdint.h>
+#include <stddef.h>
 
 /**
  *   @brief   -  Reads 'size' bytes from non-volatile memory 'base + offset' into given buffer
@@ -16,6 +18,18 @@
 **/
 uint32_t val_nvm_read(uint32_t offset, void *buffer, size_t size)
 {
+      /* Basic parameter validation to avoid OOB or faults */
+      if (buffer == NULL) {
+            return 1; /* invalid parameter */
+      }
+      if (size == 0) {
+            return 0; /* no-op success */
+      }
+      /* prevent 32-bit overflow on offset + size */
+      if (size > (size_t)(UINT32_MAX - offset)) {
+            return 1; /* invalid range */
+      }
+
       return pal_nvm_read(offset, buffer, size);
 }
 
@@ -27,9 +41,21 @@ uint32_t val_nvm_read(uint32_t offset, void *buffer, size_t size)
  *             -  size    : Number of bytes
  *    @return  -  SUCCESS/FAILURE
 **/
-uint32_t val_nvm_write(uint32_t offset, void *buffer, size_t size)
+uint32_t val_nvm_write(uint32_t offset, const void *buffer, size_t size)
 {
-      return pal_nvm_write(offset, buffer, size);
+      /* Basic parameter validation to avoid OOB or faults */
+      if (buffer == NULL) {
+            return 1; /* invalid parameter */
+      }
+      if (size == 0) {
+            return 0; /* no-op success */
+      }
+      /* prevent 32-bit overflow on offset + size */
+      if (size > (size_t)(UINT32_MAX - offset)) {
+            return 1; /* invalid range */
+      }
+
+      return pal_nvm_write(offset, (void *)buffer, size);
 }
 
 /**
