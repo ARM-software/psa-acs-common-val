@@ -384,36 +384,51 @@ static uint64_t reinterpret_unsigned_int(enum format_length length, uint64_t val
 static uint64_t reinterpret_signed_int(enum format_length length, uint64_t value,
                 struct format_flags *flags)
 {
-    int64_t signed_value = (int64_t)reinterpret_unsigned_int(length, value);
+    /*
+     * Compute the absolute magnitude using unsigned arithmetic to avoid
+     * undefined behavior when negating the most negative value
+     * (e.g., INT64_MIN). Return the magnitude as an unsigned integer and set
+     * the neg flag when the original value is negative.
+     */
+    uint64_t uval = reinterpret_unsigned_int(length, value);
 
     switch (length) {
-    case length8:
-        if ((int8_t)signed_value < 0) {
+    case length8: {
+        int8_t s = (int8_t)uval;
+        if (s < 0) {
             flags->neg = true;
-            signed_value = (-signed_value) & 0xFF;
+            return (uint8_t)(0u - (uint8_t)s);
         }
-        break;
-    case length16:
-        if ((int16_t)signed_value < 0) {
+        return (uint8_t)s;
+    }
+    case length16: {
+        int16_t s = (int16_t)uval;
+        if (s < 0) {
             flags->neg = true;
-            signed_value = (-signed_value) & 0xFFFF;
+            return (uint16_t)(0u - (uint16_t)s);
         }
-        break;
-    case length32:
-        if ((int32_t)signed_value < 0) {
+        return (uint16_t)s;
+    }
+    case length32: {
+        int32_t s = (int32_t)uval;
+        if (s < 0) {
             flags->neg = true;
-            signed_value = (-signed_value) & 0xFFFFFFFF;
+            return (uint32_t)(0u - (uint32_t)s);
         }
-        break;
-    case length64:
-        if ((int64_t)signed_value < 0) {
+        return (uint32_t)s;
+    }
+    case length64: {
+        int64_t s = (int64_t)uval;
+        if (s < 0) {
             flags->neg = true;
-            signed_value = -signed_value;
+            /* Use unsigned subtraction to avoid UB on INT64_MIN. */
+            return (uint64_t)(0ull - (uint64_t)s);
         }
-        break;
+        return (uint64_t)s;
+    }
     }
 
-    return (uint64_t)signed_value;
+    return 0;
 }
 
 /**
