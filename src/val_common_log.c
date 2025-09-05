@@ -588,7 +588,12 @@ out:
 uint32_t val_printf(print_verbosity_t verbosity, const char *msg, ...)
 {
     size_t chars_written = 0;
-    size_t len = log_strnlen_s(msg, LOG_MAX_STRING_LENGTH - 2);
+    /*
+     * Compute length bounded for CRLF conversion path. This keeps two bytes
+     * spare for "\r\n" and the string terminator when we need to rewrite a
+     * trailing "\n".
+     */
+    size_t len_crlf = log_strnlen_s(msg, LOG_MAX_STRING_LENGTH - 2);
     static bool lastWasNewline = true;
     char formatted_msg[LOG_MAX_STRING_LENGTH];
     va_list args;
@@ -630,19 +635,35 @@ uint32_t val_printf(print_verbosity_t verbosity, const char *msg, ...)
             }
         }
 
-        if (len > 0 && msg[len - 1] == '\n')
+        if (len_crlf > 0 && msg[len_crlf - 1] == '\n')
         {
-            val_mem_copy(formatted_msg, msg, len - 1);
-            formatted_msg[len - 1] = '\r';
-            formatted_msg[len] = '\n';
-            formatted_msg[len + 1] = '\0';
+            /*
+             * Safe CRLF conversion: copy everything up to the trailing '\n'
+             * into a bounded buffer, then append "\r\n" and a terminator.
+             */
+            val_mem_copy(formatted_msg, msg, len_crlf - 1);
+            formatted_msg[len_crlf - 1] = '\r';
+            formatted_msg[len_crlf] = '\n';
+            formatted_msg[len_crlf + 1] = '\0';
 
             chars_written = val_log(formatted_msg, args);
             lastWasNewline = true;
         }
         else
         {
-            chars_written = val_log(msg, args);
+            /*
+             * Ensure the format string is always null-terminated before
+             * passing to val_log. If 'msg' is not terminated within the
+             * allowed bound, copy up to the maximum and terminate locally to
+             * avoid unbounded reads.
+             */
+            size_t len = log_strnlen_s(msg, LOG_MAX_STRING_LENGTH - 1);
+            if (len > 0 && msg != NULL) {
+                val_mem_copy(formatted_msg, msg, len);
+            }
+            formatted_msg[len] = '\0';
+
+            chars_written = val_log(formatted_msg, args);
             lastWasNewline = false;
         }
     }
