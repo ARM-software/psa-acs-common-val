@@ -159,6 +159,13 @@ void val_handle_reboot_result(uint32_t test_progress)
  */
 void val_update_regression_report(uint32_t test_result, regre_report_t *regre_report)
 {
+    /* Guard against NULL pointer to avoid dereference */
+    if (regre_report == NULL)
+    {
+        val_printf(ERROR, "val_update_regression_report: regre_report is NULL\n");
+        return;
+    }
+
     switch (test_result)
     {
         case TEST_PASS:
