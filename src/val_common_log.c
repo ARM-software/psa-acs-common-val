@@ -465,6 +465,10 @@ static size_t val_log(const char *fmt, va_list args)
 
             case 's': {
                 char *str = va_arg(args, char *);
+                /* Safely handle NULL string arguments for %s */
+                if (str == NULL) {
+                    str = "(null)";
+                }
 
                 fmt++;
                 chars_written += print_string(
