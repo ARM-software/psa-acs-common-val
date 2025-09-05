@@ -168,14 +168,37 @@ void val_print_regression_report(regre_report_t *regre_report)
 }
 
 /**
- *  @brief   -  Copies 'len' bytes from source to destination buffer
- *  @param   -  dest : Destination buffer
+ *  @brief   -  Copies 'len' bytes from source to destination buffer safely
+ *             -  Handles overlapping regions like memmove
+ *  @param   -  dest : Destination buffer (must have capacity for 'len' bytes)
  *           -  src  : Source buffer
  *           -  len  : Number of bytes to copy
  *  @return  -  void
  */
 void val_mem_copy(char *dest, const char *src, size_t len)
 {
-    for (size_t i = 0; i < len; ++i)
-        dest[i] = src[i];
+    /* Gracefully handle trivial or invalid cases */
+    if (len == 0 || dest == src || dest == NULL || src == NULL)
+        return;
+
+    /* If regions overlap and dest is higher, copy backwards to avoid clobbering */
+    if ((src < dest) && (dest < (src + len)))
+    {
+        const char *s = src + len;
+        char *d = dest + len;
+        while (len--)
+        {
+            *--d = *--s;
+        }
+    }
+    else
+    {
+        /* Non-overlapping or dest before src: copy forwards */
+        const char *s = src;
+        char *d = dest;
+        while (len--)
+        {
+            *d++ = *s++;
+        }
+    }
 }
