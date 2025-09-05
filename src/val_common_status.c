@@ -7,6 +7,7 @@
 
 #include "val_common_status.h"
 #include "val_common_log.h"
+#include <stdint.h>
 
 static uint64_t width;
 
@@ -18,7 +19,20 @@ static uint64_t width;
 void *val_base_addr_ipa(uint64_t ipa_width)
 {
     width = ipa_width;
-    return ((void *)(uintptr_t)(VAL_NS_SHARED_REGION_IPA_OFFSET | (1ull << (width - 1))));
+    /* Compute 64-bit IPA and guard against integer-to-pointer truncation */
+    if (width == 0) {
+        return NULL;
+    }
+
+    uint64_t ipa = (uint64_t)VAL_NS_SHARED_REGION_IPA_OFFSET | (1ull << (width - 1));
+
+    /* If the computed IPA cannot fit in uintptr_t (e.g., on 32-bit),
+     * avoid truncation and fall back to platform physical base via caller. */
+    if (ipa > (uint64_t)UINTPTR_MAX) {
+        return NULL;
+    }
+
+    return (void *)(uintptr_t)ipa;
 }
 
 /**
@@ -38,8 +52,13 @@ void *val_get_shared_region_base_pa(void)
 **/
 void *val_get_shared_region_base(void)
 {
-    if (width)
-        return val_base_addr_ipa(width);
+    if (width) {
+        void *ipa_base = val_base_addr_ipa(width);
+        if (ipa_base != NULL) {
+            return ipa_base;
+        }
+        /* Fallback handled below if IPA cannot be represented as a pointer */
+    }
 
     return val_get_shared_region_base_pa();
 }
