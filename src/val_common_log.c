@@ -42,6 +42,18 @@ enum format_length {
     length64 = 64,
 };
 
+/* Track the exact length modifier to read correct va_arg type. */
+enum format_length_mod {
+    len_default, /* no modifier */
+    len_hh,      /* hh */
+    len_h,       /* h */
+    len_l,       /* l */
+    len_ll,      /* ll */
+    len_j,       /* intmax_t/uintmax_t */
+    len_z,       /* size_t */
+    len_t,       /* ptrdiff_t */
+};
+
 #ifndef STATIC_ASSERT_CHECKS
 static_assert(sizeof(char) == sizeof(uint8_t),
           "log expects char to be 8 bits wide");
@@ -279,15 +291,18 @@ static const char *parse_flags(const char *fmt, struct format_flags *flags)
  **/
 
 static const char *parse_length_modifier(const char *fmt,
-                     enum format_length *length)
+                    enum format_length_mod *lenmod,
+                    enum format_length *length)
 {
     switch (*fmt) {
     case 'h':
         fmt++;
         if (*fmt == 'h') {
             fmt++;
+            *lenmod = len_hh;
             *length = length8;
         } else {
+            *lenmod = len_h;
             *length = length16;
         }
         break;
@@ -295,25 +310,106 @@ static const char *parse_length_modifier(const char *fmt,
         fmt++;
         if (*fmt == 'l') {
             fmt++;
+            *lenmod = len_ll;
             *length = length64;
         } else {
+            *lenmod = len_l;
             *length = length64;
         }
         break;
 
     case 'j':
+        fmt++;
+        *lenmod = len_j;
+        *length = length64;
+        break;
     case 'z':
+        fmt++;
+        *lenmod = len_z;
+        *length = length64;
+        break;
     case 't':
         fmt++;
+        *lenmod = len_t;
         *length = length64;
         break;
 
     default:
+        *lenmod = len_default;
         *length = length32;
         break;
     }
 
     return fmt;
+}
+
+/* Helpers to fetch variadic args using the exact type, then normalize. */
+static uint64_t read_unsigned_arg(va_list args, enum format_length_mod mod)
+{
+    switch (mod) {
+    case len_hh:      return (uint64_t)(unsigned int)va_arg(args, unsigned int);
+    case len_h:       return (uint64_t)(unsigned int)va_arg(args, unsigned int);
+    case len_default: return (uint64_t)(unsigned int)va_arg(args, unsigned int);
+    case len_l:       return (uint64_t)va_arg(args, unsigned long);
+    case len_ll:      return (uint64_t)va_arg(args, unsigned long long);
+    case len_j:       return (uint64_t)va_arg(args, uintmax_t);
+    case len_z:       return (uint64_t)va_arg(args, size_t);
+    case len_t: {
+        /* ptrdiff_t is signed; for unsigned formats, cast its representation */
+        ptrdiff_t v = va_arg(args, ptrdiff_t);
+        return (uint64_t)(v < 0 ? (uint64_t)(-(int64_t)v) /* magnitude */ : (uint64_t)v);
+    }
+    }
+    return 0;
+}
+
+static uint64_t read_signed_arg_abs(va_list args, enum format_length_mod mod,
+                    struct format_flags *flags)
+{
+    int64_t v64;
+    switch (mod) {
+    case len_hh:
+    case len_h:
+    case len_default: {
+        int v = va_arg(args, int);
+        if (v < 0) { flags->neg = true; v64 = -(int64_t)v; }
+        else { v64 = v; }
+        break;
+    }
+    case len_l: {
+        long v = va_arg(args, long);
+        if (v < 0) { flags->neg = true; v64 = -(int64_t)v; }
+        else { v64 = v; }
+        break;
+    }
+    case len_ll: {
+        long long v = va_arg(args, long long);
+        if (v < 0) { flags->neg = true; v64 = -(int64_t)v; }
+        else { v64 = v; }
+        break;
+    }
+    case len_j: {
+        intmax_t v = va_arg(args, intmax_t);
+        if (v < 0) { flags->neg = true; v64 = -(int64_t)v; }
+        else { v64 = v; }
+        break;
+    }
+    case len_z: {
+        /* size_t is unsigned; treat as signed via cast to ssize_t if available.
+         * On this platform, width is 64-bit; assume signed counterpart fits. */
+        size_t v = va_arg(args, size_t);
+        if ((int64_t)v < 0) { flags->neg = true; v64 = -(int64_t)v; }
+        else { v64 = (int64_t)v; }
+        break;
+    }
+    case len_t: {
+        ptrdiff_t v = va_arg(args, ptrdiff_t);
+        if (v < 0) { flags->neg = true; v64 = -(int64_t)v; }
+        else { v64 = v; }
+        break;
+    }
+    }
+    return (uint64_t)v64;
 }
 
 /**
@@ -439,12 +535,13 @@ static size_t val_log(const char *fmt, va_list args)
             struct format_flags flags = {0};
             int min_width = 0;
             enum format_length length = length32;
+            enum format_length_mod lenmod = len_default;
             uint64_t value;
 
             fmt++;
             fmt = parse_flags(fmt, &flags);
             fmt = parse_min_width(fmt, args, &flags, &min_width);
-            fmt = parse_length_modifier(fmt, &length);
+            fmt = parse_length_modifier(fmt, &lenmod, &length);
 
             /* Handle the format specifier. */
             switch (*fmt) {
@@ -475,9 +572,7 @@ static size_t val_log(const char *fmt, va_list args)
             case 'd':
             case 'i': {
                 fmt++;
-                value = va_arg(args, uint64_t);
-                value = reinterpret_signed_int(length, value,
-                                   &flags);
+                value = read_signed_arg_abs(args, lenmod, &flags);
 
                 chars_written += print_int(value, base10,
                                min_width, &flags);
@@ -486,8 +581,7 @@ static size_t val_log(const char *fmt, va_list args)
 
             case 'b':
                 fmt++;
-                value = va_arg(args, uint64_t);
-                value = reinterpret_unsigned_int(length, value);
+                value = read_unsigned_arg(args, lenmod);
 
                 chars_written += print_int(value, base2,
                                min_width, &flags);
@@ -505,8 +599,7 @@ static size_t val_log(const char *fmt, va_list args)
 
             case 'o':
                 fmt++;
-                value = va_arg(args, uint64_t);
-                value = reinterpret_unsigned_int(length, value);
+                value = read_unsigned_arg(args, lenmod);
 
                 chars_written += print_int(value, base8,
                                min_width, &flags);
@@ -514,8 +607,7 @@ static size_t val_log(const char *fmt, va_list args)
 
             case 'x':
                 fmt++;
-                value = va_arg(args, uint64_t);
-                value = reinterpret_unsigned_int(length, value);
+                value = read_unsigned_arg(args, lenmod);
 
                 chars_written += print_int(value, base16,
                                min_width, &flags);
@@ -524,8 +616,7 @@ static size_t val_log(const char *fmt, va_list args)
             case 'X':
                 fmt++;
                 flags.upper = true;
-                value = va_arg(args, uint64_t);
-                value = reinterpret_unsigned_int(length, value);
+                value = read_unsigned_arg(args, lenmod);
 
                 chars_written += print_int(value, base16,
                                min_width, &flags);
@@ -533,8 +624,7 @@ static size_t val_log(const char *fmt, va_list args)
 
             case 'u':
                 fmt++;
-                value = va_arg(args, uint64_t);
-                value = reinterpret_unsigned_int(length, value);
+                value = read_unsigned_arg(args, lenmod);
 
                 chars_written += print_int(value, base10,
                                min_width, &flags);
@@ -542,7 +632,8 @@ static size_t val_log(const char *fmt, va_list args)
 
             case 'p':
                 fmt++;
-                value = va_arg(args, uint64_t);
+                /* %p expects a void*. Read pointer and cast to integer. */
+                value = (uint64_t)(uintptr_t)va_arg(args, void *);
                 min_width = sizeof(size_t) * 2 + 2;
                 flags.zero = true;
                 flags.alt = true;
