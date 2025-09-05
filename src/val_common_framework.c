@@ -48,6 +48,11 @@ uint32_t is_reboot_run(uint32_t test_progress, const uint8_t *pattern, uint32_t 
 **/
 void val_reset_test_info_fields(test_info_t *test_info)
 {
+    if (test_info == NULL)
+    {
+        val_printf(ERROR, "val_reset_test_info_fields: test_info is NULL\n");
+        return;
+    }
     test_info->test_num      = VAL_INVALID_TEST_NUM;
     test_info->end_test_num  = total_tests;
     test_info->suite_num     = 0;
