@@ -17,8 +17,21 @@ static uint64_t width;
 **/
 void *val_base_addr_ipa(uint64_t ipa_width)
 {
-    width = ipa_width;
-    return ((void *)(uintptr_t)(VAL_NS_SHARED_REGION_IPA_OFFSET | (1ull << (width - 1))));
+    /* Validate width before using it in a shift to avoid UB */
+    uint64_t safe_width = ipa_width;
+
+    if (safe_width == 0 || safe_width > 64) {
+        /* Invalid IPA width; fall back to platform PA base without updating cached width */
+        val_printf(WARN, "Invalid IPA width=%llu; using PA base for shared region\n",
+                   (unsigned long long)ipa_width);
+        return (void *)(PLATFORM_SHARED_REGION_BASE);
+    }
+
+    width = safe_width; /* cache validated width */
+
+    /* Set MSB according to IPA width: bit position (width-1) is safe in [0, 63] */
+    uint64_t top_bit = (1ull << (safe_width - 1));
+    return (void *)(uintptr_t)(VAL_NS_SHARED_REGION_IPA_OFFSET | top_bit);
 }
 
 /**
