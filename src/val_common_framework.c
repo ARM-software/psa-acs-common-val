@@ -66,6 +66,12 @@ void val_reset_test_info_fields(test_info_t *test_info)
  */
 void val_reset_regression_report(regre_report_t *report)
 {
+    if (report == NULL)
+    {
+        val_printf(ERROR, "val_reset_regression_report: report is NULL\n");
+        return;
+    }
+
     report->total_pass  = 0;
     report->total_fail  = 0;
     report->total_skip  = 0;
