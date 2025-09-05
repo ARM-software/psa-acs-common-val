@@ -8,6 +8,36 @@
 #include "val_common_log.h"
 #include "val_common_framework.h"
 
+/*
+ * Concurrent calls to val_printf are racy without synchronization because
+ * they share the global circular log buffer and offset. Protect all log
+ * writes with a lightweight spinlock so that each formatted message is
+ * emitted atomically and the buffer state remains consistent.
+ */
+#if !defined(__STDC_VERSION__) || (__STDC_VERSION__ < 201112L) || defined(__STDC_NO_ATOMICS__)
+/* Fallback lock using GCC built-ins when C11 atomics are unavailable. */
+static volatile int g_val_log_lock;
+static inline void val_log_lock(void)
+{
+    while (__sync_lock_test_and_set(&g_val_log_lock, 1)) { /* spin */ }
+}
+static inline void val_log_unlock(void)
+{
+    __sync_lock_release(&g_val_log_lock);
+}
+#else
+#include <stdatomic.h>
+static atomic_flag g_val_log_lock = ATOMIC_FLAG_INIT;
+static inline void val_log_lock(void)
+{
+    while (atomic_flag_test_and_set_explicit(&g_val_log_lock, memory_order_acquire)) { /* spin */ }
+}
+static inline void val_log_unlock(void)
+{
+    atomic_flag_clear_explicit(&g_val_log_lock, memory_order_release);
+}
+#endif
+
 static void val_putc(char *c)
 {
     pal_uart_putc(*c);
@@ -88,6 +118,11 @@ char log_buffer[LOG_BUFFER_SIZE];
 
 static void log_putchar(char c)
 {
+    /*
+     * val_printf holds the lock during an entire formatted write. This
+     * function is only called from within that critical section. Keep the
+     * buffer update here to avoid accidental unsynchronized access.
+     */
     log_buffer[log_buffer_offset] = c;
     log_buffer_offset = (log_buffer_offset + 1) % LOG_BUFFER_SIZE;
 
@@ -684,6 +719,8 @@ uint32_t val_printf(print_verbosity_t verbosity, const char *msg, ...)
     char formatted_msg[LOG_MAX_STRING_LENGTH];
     va_list args;
 
+    /* Serialize concurrent writers to the shared log buffer and UART. */
+    val_log_lock();
     va_start(args, msg);
 
     if (verbosity >= VERBOSITY)
@@ -738,6 +775,7 @@ uint32_t val_printf(print_verbosity_t verbosity, const char *msg, ...)
         }
     }
     va_end(args);
+    val_log_unlock();
 
     return (uint32_t)chars_written;
 }
