@@ -35,6 +35,12 @@ void val_handle_reboot_result(uint32_t test_progress);
 void val_update_regression_report(uint32_t test_result, regre_report_t *regre_report);
 void val_print_regression_report(regre_report_t *regre_report);
 
-void val_mem_copy(char *dest, const char *src, size_t len);
+/*
+ * Safe memory copy with overlap handling (memmove semantics).
+ * Copies up to the minimum of `len` and `dest_sz` bytes from `src` to `dest`.
+ * Returns the number of bytes actually copied. If either pointer is NULL or
+ * `dest_sz` is zero, no bytes are copied and 0 is returned.
+ */
+size_t val_mem_copy(char *dest, size_t dest_sz, const char *src, size_t len);
 
 #endif /* VAL_COMMON_FRAMEWORK_H */

@@ -168,14 +168,42 @@ void val_print_regression_report(regre_report_t *regre_report)
 }
 
 /**
- *  @brief   -  Copies 'len' bytes from source to destination buffer
- *  @param   -  dest : Destination buffer
- *           -  src  : Source buffer
- *           -  len  : Number of bytes to copy
- *  @return  -  void
+ *  @brief   -  Copies up to min(len, dest_sz) bytes from source to destination safely
+ *             -  Handles overlapping regions like memmove
+ *  @param   -  dest     : Destination buffer
+ *           -  dest_sz  : Destination buffer capacity in bytes
+ *           -  src      : Source buffer
+ *           -  len      : Requested number of bytes to copy
+ *  @return  -  Number of bytes actually copied
  */
-void val_mem_copy(char *dest, const char *src, size_t len)
+size_t val_mem_copy(char *dest, size_t dest_sz, const char *src, size_t len)
 {
-    for (size_t i = 0; i < len; ++i)
-        dest[i] = src[i];
+    /* Gracefully handle trivial or invalid cases */
+    if (dest == NULL || src == NULL || dest_sz == 0 || len == 0 || dest == src)
+        return 0;
+
+    size_t n = (len < dest_sz) ? len : dest_sz;
+
+    /* If regions overlap and dest is higher, copy backwards to avoid clobbering */
+    if ((src < dest) && (dest < (src + n)))
+    {
+        const char *s = src + n;
+        char *d = dest + n;
+        while (n--)
+        {
+            *--d = *--s;
+        }
+    }
+    else
+    {
+        /* Non-overlapping or dest before src: copy forwards */
+        const char *s = src;
+        char *d = dest;
+        while (n--)
+        {
+            *d++ = *s++;
+        }
+    }
+
+    return (len < dest_sz) ? len : dest_sz;
 }

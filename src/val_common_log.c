@@ -632,10 +632,19 @@ uint32_t val_printf(print_verbosity_t verbosity, const char *msg, ...)
 
         if (len > 0 && msg[len - 1] == '\n')
         {
-            val_mem_copy(formatted_msg, msg, len - 1);
-            formatted_msg[len - 1] = '\r';
-            formatted_msg[len] = '\n';
-            formatted_msg[len + 1] = '\0';
+            /* Copy message excluding trailing '\n', then append "\r\n" and NUL. */
+            size_t copied = val_mem_copy(formatted_msg, sizeof(formatted_msg), msg, len - 1);
+            /* Ensure there is room for CRLF and NUL; truncate gracefully if needed. */
+            size_t tail = copied;
+            if (tail + 2 < sizeof(formatted_msg)) {
+                formatted_msg[tail] = '\r';
+                formatted_msg[tail + 1] = '\n';
+                formatted_msg[tail + 2] = '\0';
+            } else if (tail < sizeof(formatted_msg)) {
+                /* Best-effort termination if near the end of the buffer. */
+                /* Guarantee NUL-termination even if we cannot append CRLF fully. */
+                formatted_msg[sizeof(formatted_msg) - 1] = '\0';
+            }
 
             chars_written = val_log(formatted_msg, args);
             lastWasNewline = true;
