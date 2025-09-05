@@ -16,7 +16,7 @@
  *            -  size    : Number of bytes
  *   @return  -  SUCCESS/FAILURE
 **/
-uint32_t val_nvm_read(uint32_t offset, void *buffer, size_t size)
+uint32_t val_nvm_read(size_t offset, void *buffer, size_t size)
 {
       /* Accept zero-size operations as a no-op even with NULL buffer */
       if (size == 0) {
@@ -28,9 +28,13 @@ uint32_t val_nvm_read(uint32_t offset, void *buffer, size_t size)
             return 1; /* invalid parameter */
       }
 
-      /* prevent 32-bit overflow on offset + size */
-      if (size > (size_t)(UINT32_MAX - offset)) {
-            return 1; /* invalid range */
+      /* prevent 32-bit overflow on offset + size and reject >32-bit inputs */
+      {
+            const uint64_t off64  = (uint64_t)offset;
+            const uint64_t size64 = (uint64_t)size;
+            if (off64 > UINT32_MAX || size64 > UINT32_MAX || (off64 + size64) > UINT32_MAX) {
+                  return 1; /* invalid range */
+            }
       }
 
       /* Optional: enforce total NVM bounds if platform provides size */
@@ -58,7 +62,7 @@ uint32_t val_nvm_read(uint32_t offset, void *buffer, size_t size)
  *             -  size    : Number of bytes
  *    @return  -  SUCCESS/FAILURE
 **/
-uint32_t val_nvm_write(uint32_t offset, void *buffer, size_t size)
+uint32_t val_nvm_write(size_t offset, void *buffer, size_t size)
 {
       /* Accept zero-size operations as a no-op even with NULL buffer */
       if (size == 0) {
@@ -70,9 +74,13 @@ uint32_t val_nvm_write(uint32_t offset, void *buffer, size_t size)
             return 1; /* invalid parameter */
       }
 
-      /* prevent 32-bit overflow on offset + size */
-      if (size > (size_t)(UINT32_MAX - offset)) {
-            return 1; /* invalid range */
+      /* prevent 32-bit overflow on offset + size and reject >32-bit inputs */
+      {
+            const uint64_t off64  = (uint64_t)offset;
+            const uint64_t size64 = (uint64_t)size;
+            if (off64 > UINT32_MAX || size64 > UINT32_MAX || (off64 + size64) > UINT32_MAX) {
+                  return 1; /* invalid range */
+            }
       }
 
       /* Optional: enforce total NVM bounds if platform provides size */

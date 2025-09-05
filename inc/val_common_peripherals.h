@@ -9,6 +9,7 @@
 #define VAL_COMMON_PERIPHERALS_H
 
 #include "val_common.h"
+#include <stddef.h>
 
 /*
  * Reads 'size' bytes from non-volatile memory at 'offset' into 'buffer'.
@@ -18,7 +19,7 @@
  * - if VAL_NVM_TOTAL_SIZE is defined, (offset + size) must be within it
  * - if VAL_NVM_MAX_RW_SIZE is defined, size must not exceed it
  */
-uint32_t val_nvm_read(uint32_t offset, void *buffer, size_t size);
+uint32_t val_nvm_read(size_t offset, void *buffer, size_t size);
 
 /*
  * Writes 'size' bytes from 'buffer' into non-volatile memory at 'offset'.
@@ -30,7 +31,7 @@ uint32_t val_nvm_read(uint32_t offset, void *buffer, size_t size);
  * Note: Buffer is treated as read-only by PAL; signature remains non-const
  * to match platform interface and avoid const-cast.
  */
-uint32_t val_nvm_write(uint32_t offset, void *buffer, size_t size);
+uint32_t val_nvm_write(size_t offset, void *buffer, size_t size);
 uint32_t val_watchdog_enable(void);
 uint32_t val_watchdog_disable(void);
 
