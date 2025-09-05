@@ -190,9 +190,27 @@ void val_update_regression_report(uint32_t test_result, regre_report_t *regre_re
  */
 void val_print_regression_report(regre_report_t *regre_report)
 {
+    /* Print header */
     val_printf(ALWAYS, "\n\n");
     val_printf(ALWAYS, "REGRESSION REPORT: \n");
     val_printf(ALWAYS, "==========================\n");
+
+    /* Guard against NULL to avoid dereferencing a null pointer */
+    if (regre_report == NULL)
+    {
+        val_printf(ERROR, "val_print_regression_report: regre_report is NULL\n");
+        val_printf(ALWAYS, "   TOTAL TESTS     : %d\n", 0, 0);
+        val_printf(ALWAYS, "   TOTAL PASSED    : %d\n", 0);
+        val_printf(ALWAYS, "   TOTAL FAILED    : %d\n", 0);
+        val_printf(ALWAYS, "   TOTAL SKIPPED   : %d\n", 0);
+        val_printf(ALWAYS, "   TOTAL SIM ERROR : %d\n", 0);
+        val_printf(ALWAYS, "==========================\n");
+        val_printf(ALWAYS, "******* END OF ACS *******\n");
+        val_printf(ALWAYS, "\n");
+        return;
+    }
+
+    /* Print actual regression summary */
     val_printf(ALWAYS, "   TOTAL TESTS     : %d\n",
         (uint32_t)(regre_report->total_pass +
                    regre_report->total_fail +
