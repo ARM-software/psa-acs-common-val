@@ -20,6 +20,17 @@ typedef enum {
     ALWAYS  = 9
 } print_verbosity_t;
 
+/*
+ * Enable compile-time format-string checking for compilers that support it
+ * (e.g., GCC/Clang). The format string is parameter 2 and the variadic
+ * arguments start at parameter 3.
+ */
+#if defined(__clang__) || defined(__GNUC__)
+#define VAL_PRINTF_FORMAT(fmt_index, first_arg) __attribute__((format(printf, fmt_index, first_arg)))
+#else
+#define VAL_PRINTF_FORMAT(fmt_index, first_arg)
+#endif
+
 /**
  *   @brief    - This function prints the given string and data onto the uart
  *   @param    - verbosity  : Print Verbosity level
@@ -27,6 +38,6 @@ typedef enum {
  *   @param    - ...        : ellipses for variadic args
  *   @return   - SUCCESS((Any positive number for character written)/FAILURE(0))
 **/
-uint32_t val_printf(print_verbosity_t verbosity, const char *msg, ...);
+uint32_t val_printf(print_verbosity_t verbosity, const char *msg, ...) VAL_PRINTF_FORMAT(2, 3);
 
 #endif /* VAL_COMMON_LOG_H */
