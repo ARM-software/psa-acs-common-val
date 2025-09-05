@@ -14,7 +14,7 @@
  *            -  size    : Number of bytes
  *   @return  -  SUCCESS/FAILURE
 **/
-uint32_t val_nvm_read(uint32_t offset, void *buffer, size_t size)
+uint32_t val_nvm_read(size_t offset, void *buffer, size_t size)
 {
       return pal_nvm_read(offset, buffer, size);
 }
@@ -27,7 +27,7 @@ uint32_t val_nvm_read(uint32_t offset, void *buffer, size_t size)
  *             -  size    : Number of bytes
  *    @return  -  SUCCESS/FAILURE
 **/
-uint32_t val_nvm_write(uint32_t offset, const void *buffer, size_t size)
+uint32_t val_nvm_write(size_t offset, const void *buffer, size_t size)
 {
       return pal_nvm_write(offset, buffer, size);
 }

@@ -10,8 +10,9 @@
 
 #include "val_common.h"
 
-uint32_t val_nvm_read(uint32_t offset, void *buffer, size_t size);
-uint32_t val_nvm_write(uint32_t offset, const void *buffer, size_t size);
+/* Use size_t for both offset and size to avoid width mismatch */
+uint32_t val_nvm_read(size_t offset, void *buffer, size_t size);
+uint32_t val_nvm_write(size_t offset, const void *buffer, size_t size);
 uint32_t val_watchdog_enable(void);
 uint32_t val_watchdog_disable(void);
 
