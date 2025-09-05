@@ -18,17 +18,34 @@
 **/
 uint32_t val_nvm_read(uint32_t offset, void *buffer, size_t size)
 {
+      /* Accept zero-size operations as a no-op even with NULL buffer */
+      if (size == 0) {
+            return 0; /* no-op success */
+      }
+
       /* Basic parameter validation to avoid OOB or faults */
       if (buffer == NULL) {
             return 1; /* invalid parameter */
       }
-      if (size == 0) {
-            return 0; /* no-op success */
-      }
+
       /* prevent 32-bit overflow on offset + size */
       if (size > (size_t)(UINT32_MAX - offset)) {
             return 1; /* invalid range */
       }
+
+      /* Optional: enforce total NVM bounds if platform provides size */
+#if defined(VAL_NVM_TOTAL_SIZE)
+      if ((uint64_t)offset + (uint64_t)size > (uint64_t)VAL_NVM_TOTAL_SIZE) {
+            return 1; /* out of NVM bounds */
+      }
+#endif
+
+      /* Optional: enforce per-operation maximum if provided */
+#if defined(VAL_NVM_MAX_RW_SIZE)
+      if (size > (size_t)VAL_NVM_MAX_RW_SIZE) {
+            return 1; /* request too large */
+      }
+#endif
 
       return pal_nvm_read(offset, buffer, size);
 }
@@ -43,17 +60,34 @@ uint32_t val_nvm_read(uint32_t offset, void *buffer, size_t size)
 **/
 uint32_t val_nvm_write(uint32_t offset, const void *buffer, size_t size)
 {
+      /* Accept zero-size operations as a no-op even with NULL buffer */
+      if (size == 0) {
+            return 0; /* no-op success */
+      }
+
       /* Basic parameter validation to avoid OOB or faults */
       if (buffer == NULL) {
             return 1; /* invalid parameter */
       }
-      if (size == 0) {
-            return 0; /* no-op success */
-      }
+
       /* prevent 32-bit overflow on offset + size */
       if (size > (size_t)(UINT32_MAX - offset)) {
             return 1; /* invalid range */
       }
+
+      /* Optional: enforce total NVM bounds if platform provides size */
+#if defined(VAL_NVM_TOTAL_SIZE)
+      if ((uint64_t)offset + (uint64_t)size > (uint64_t)VAL_NVM_TOTAL_SIZE) {
+            return 1; /* out of NVM bounds */
+      }
+#endif
+
+      /* Optional: enforce per-operation maximum if provided */
+#if defined(VAL_NVM_MAX_RW_SIZE)
+      if (size > (size_t)VAL_NVM_MAX_RW_SIZE) {
+            return 1; /* request too large */
+      }
+#endif
 
       return pal_nvm_write(offset, (void *)buffer, size);
 }
