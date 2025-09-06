@@ -226,14 +226,37 @@ void val_print_regression_report(regre_report_t *regre_report)
 }
 
 /**
- *  @brief   -  Copies 'len' bytes from source to destination buffer
- *  @param   -  dest : Destination buffer
- *           -  src  : Source buffer
- *           -  len  : Number of bytes to copy
- *  @return  -  void
+ *  @brief   -  Bounded, overlap-safe memory copy
+ *  @param   -  dest       : Destination buffer
+ *           -  dest_size  : Destination buffer size in bytes
+ *           -  src        : Source buffer
+ *           -  len        : Requested number of bytes to copy
+ *  @return  -  Number of bytes actually copied
  */
-void val_mem_copy(char *dest, const char *src, size_t len)
+size_t val_mem_copy(char *dest, size_t dest_size, const char *src, size_t len)
 {
-    for (size_t i = 0; i < len; ++i)
-        dest[i] = src[i];
+    if (dest == NULL || src == NULL || dest_size == 0 || len == 0) {
+        return 0;
+    }
+
+    size_t n = (len < dest_size) ? len : dest_size;
+
+    /* Handle potential overlap like memmove. */
+    if ((const char *)dest == src) {
+        return n;
+    }
+
+    if (dest < src || dest >= (src + n)) {
+        /* No harmful overlap or dest before src: copy forwards */
+        for (size_t i = 0; i < n; ++i) {
+            dest[i] = src[i];
+        }
+    } else {
+        /* Overlapping with dest inside src region: copy backwards */
+        for (size_t i = n; i > 0; --i) {
+            dest[i - 1] = src[i - 1];
+        }
+    }
+
+    return n;
 }

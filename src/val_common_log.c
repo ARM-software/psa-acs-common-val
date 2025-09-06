@@ -641,7 +641,7 @@ uint32_t val_printf(print_verbosity_t verbosity, const char *msg, ...)
              * Safe CRLF conversion: copy everything up to the trailing '\n'
              * into a bounded buffer, then append "\r\n" and a terminator.
              */
-            val_mem_copy(formatted_msg, msg, len_crlf - 1);
+            (void)val_mem_copy(formatted_msg, sizeof(formatted_msg), msg, len_crlf - 1);
             formatted_msg[len_crlf - 1] = '\r';
             formatted_msg[len_crlf] = '\n';
             formatted_msg[len_crlf + 1] = '\0';
@@ -659,7 +659,7 @@ uint32_t val_printf(print_verbosity_t verbosity, const char *msg, ...)
              */
             size_t len = log_strnlen_s(msg, LOG_MAX_STRING_LENGTH - 1);
             if (len > 0 && msg != NULL) {
-                val_mem_copy(formatted_msg, msg, len);
+                (void)val_mem_copy(formatted_msg, sizeof(formatted_msg), msg, len);
             }
             formatted_msg[len] = '\0';
 
