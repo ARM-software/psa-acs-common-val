@@ -8,6 +8,7 @@
 #include "val_common_framework.h"
 #include "val_common_log.h"
 #include "val_common_status.h"
+#include <string.h>
 
 extern const uint32_t total_tests;
 
@@ -176,6 +177,21 @@ void val_print_regression_report(regre_report_t *regre_report)
  */
 void val_mem_copy(char *dest, const char *src, size_t len)
 {
-    for (size_t i = 0; i < len; ++i)
-        dest[i] = src[i];
+    /*
+     * Use memmove to handle overlapping regions safely and avoid
+     * undefined behavior due to manual pointer arithmetic. Guard
+     * against NULL pointers and trivial no-op cases.
+     */
+    if (len == 0 || dest == src) {
+        return;
+    }
+    if (dest == NULL || src == NULL) {
+        return;
+    }
+
+    /*
+     * Note: We intentionally do not attempt to infer source or
+     * destination sizes here; caller must provide a valid 'len'.
+     */
+    memmove(dest, src, len);
 }
