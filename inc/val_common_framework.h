@@ -30,7 +30,26 @@ uint32_t is_reboot_run(uint32_t test_progress, const uint8_t *pattern, uint32_t 
 void val_reset_test_info_fields(test_info_t *test_info);
 void val_reset_regression_report(regre_report_t *report);
 void val_log_final_test_status(test_info_t *test_info, regre_report_t *regre_report);
-void val_sort_indices(uint32_t *a, uint32_t *b);
+/*
+ * Sort two indices with explicit bounds.
+ * - Ensures the two indices are ordered (a <= b) and within [0, max_index].
+ * - If either index is out of range, it is clamped to the nearest valid value.
+ * - Returns 0 if inputs were already valid and ordered, 1 if clamping or reordering occurred,
+ *   and -1 if the pointers are NULL (no changes performed).
+ */
+int val_sort_indices_bounded(uint32_t *a, uint32_t *b, uint32_t max_index);
+
+/*
+ * Deprecated: Unbounded variant is ambiguous and can lead to misuse.
+ * Prefer 'val_sort_indices_bounded'. This wrapper maintains ABI but does not enforce bounds.
+ */
+#if defined(__GNUC__) || defined(__clang__)
+#define VAL_DEPRECATED(msg) __attribute__((deprecated(msg)))
+#else
+#define VAL_DEPRECATED(msg)
+#endif
+void VAL_DEPRECATED("Use val_sort_indices_bounded() with an explicit max_index")
+val_sort_indices(uint32_t *a, uint32_t *b);
 void val_handle_reboot_result(uint32_t test_progress);
 void val_update_regression_report(uint32_t test_result, regre_report_t *regre_report);
 void val_print_regression_report(regre_report_t *regre_report);

@@ -117,13 +117,50 @@ void val_log_final_test_status(test_info_t *test_info, regre_report_t *regre_rep
 }
 
 /**
- *  @brief   -  Ensures two indices are in ascending order
- *  @param   -  a : Pointer to first index
- *           -  b : Pointer to second index
- *  @return  -  void
+ *  @brief   -  Ensures two indices are ordered and within bounds
+ *  @param   -  a          : Pointer to first index (in/out)
+ *           -  b          : Pointer to second index (in/out)
+ *           -  max_index  : Maximum allowed index value (inclusive)
+ *  @return  -  0 if already valid and ordered, 1 if adjusted, -1 on invalid args
  */
+int val_sort_indices_bounded(uint32_t *a, uint32_t *b, uint32_t max_index)
+{
+    if (a == NULL || b == NULL)
+    {
+        val_printf(ERROR, "val_sort_indices_bounded: NULL pointer(s)\n");
+        return -1;
+    }
+
+    int adjusted = 0;
+
+    /* Clamp to [0, max_index] */
+    if (*a > max_index) { *a = max_index; adjusted = 1; }
+    /* Underflow not possible for unsigned, but document intent */
+    /* if (*a < 0) *a = 0; */
+
+    if (*b > max_index) { *b = max_index; adjusted = 1; }
+
+    /* Order indices */
+    if (*a > *b)
+    {
+        uint32_t tmp = *a;
+        *a = *b;
+        *b = tmp;
+        adjusted = 1;
+    }
+
+    return adjusted;
+}
+
+/* Deprecated wrapper: retained for ABI compatibility. Prefer val_sort_indices_bounded(). */
 void val_sort_indices(uint32_t *a, uint32_t *b)
 {
+    /* No clamping possible without an explicit bound; only enforce ordering. */
+    if (a == NULL || b == NULL)
+    {
+        val_printf(WARN, "val_sort_indices: NULL pointer(s); no action taken\n");
+        return;
+    }
     if (*a > *b)
     {
         uint32_t temp = *a;
