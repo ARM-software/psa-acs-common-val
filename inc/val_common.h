@@ -12,15 +12,15 @@
 #include <stdint.h>
 
 /* Various test status codes, Max value = 0xff */
-#define  VAL_SUCCESS            0
-#define  VAL_ERROR_POINT(n)     n
-#define  VAL_TEST_INIT_FAILED   101
-#define  VAL_STATUS_INVALID     102
-#define  VAL_SKIP_CHECK         103
-#define  VAL_SIM_ERROR          104
+#define  VAL_SUCCESS            0u
+#define  VAL_ERROR_POINT(n)     (uint32_t)(n)
+#define  VAL_TEST_INIT_FAILED   101u
+#define  VAL_STATUS_INVALID     102u
+#define  VAL_SKIP_CHECK         103u
+#define  VAL_SIM_ERROR          104u
 
-#define  VAL_STATUS_ERROR_MAX   255
-#define  VAL_INVALID_TEST_NUM   0xFFFFFFFF
+#define  VAL_STATUS_ERROR_MAX   255u
+#define  VAL_INVALID_TEST_NUM   0xFFFFFFFFu
 
 /*
  * Safe helpers to avoid multiple evaluation of macro arguments
@@ -55,44 +55,50 @@ static inline uint32_t val_set_bits(uint32_t data, uint32_t pos, uint32_t len, u
 
 
 /* Test state macros */
-#define TEST_START              0x01
-#define TEST_PASS               0x02
-#define TEST_FAIL               0x03
-#define TEST_SKIP               0x04
-#define TEST_ERROR              0x05
-#define TEST_END                0x06
-#define TEST_REBOOTING          0x07
+#define TEST_START              0x01u
+#define TEST_PASS               0x02u
+#define TEST_FAIL               0x03u
+#define TEST_SKIP               0x04u
+#define TEST_ERROR              0x05u
+#define TEST_END                0x06u
+#define TEST_REBOOTING          0x07u
 
-#define TEST_STATE_SHIFT        8
-#define TEST_STATE_MASK         0xFF
-#define TEST_STATUS_CODE_MASK   0xFF
-#define TEST_STATUS_CODE_SHIFT  0
+#define TEST_STATE_SHIFT        8u
+#define TEST_STATE_MASK         0xFFu
+#define TEST_STATUS_CODE_MASK   0xFFu
+#define TEST_STATUS_CODE_SHIFT  0u
 
-#define RESULT_START(status)   (((TEST_START) << TEST_STATE_SHIFT) |\
-                                    ((status) << TEST_STATUS_CODE_SHIFT))
-#define RESULT_END(status)       (((TEST_END) << TEST_STATE_SHIFT) |\
-                                    ((status) << TEST_STATUS_CODE_SHIFT))
-#define RESULT_PASS(status)     (((TEST_PASS) << TEST_STATE_SHIFT) |\
-                                    ((status) << TEST_STATUS_CODE_SHIFT))
-#define RESULT_FAIL(status)     (((TEST_FAIL) << TEST_STATE_SHIFT) |\
-                                    ((status) << TEST_STATUS_CODE_SHIFT))
-#define RESULT_SKIP(status)     (((TEST_SKIP) << TEST_STATE_SHIFT) |\
-                                    ((status) << TEST_STATUS_CODE_SHIFT))
-#define RESULT_ERROR(status)     (((TEST_ERROR) << TEST_STATE_SHIFT) |\
-                                    ((status) << TEST_STATUS_CODE_SHIFT))
+#define RESULT_START(status) \
+    ( (uint32_t)(TEST_START) << (uint32_t)TEST_STATE_SHIFT | \
+      (((uint32_t)(status) & (uint32_t)TEST_STATUS_CODE_MASK) << (uint32_t)TEST_STATUS_CODE_SHIFT) )
+#define RESULT_END(status) \
+    ( (uint32_t)(TEST_END) << (uint32_t)TEST_STATE_SHIFT | \
+      (((uint32_t)(status) & (uint32_t)TEST_STATUS_CODE_MASK) << (uint32_t)TEST_STATUS_CODE_SHIFT) )
+#define RESULT_PASS(status) \
+    ( (uint32_t)(TEST_PASS) << (uint32_t)TEST_STATE_SHIFT | \
+      (((uint32_t)(status) & (uint32_t)TEST_STATUS_CODE_MASK) << (uint32_t)TEST_STATUS_CODE_SHIFT) )
+#define RESULT_FAIL(status) \
+    ( (uint32_t)(TEST_FAIL) << (uint32_t)TEST_STATE_SHIFT | \
+      (((uint32_t)(status) & (uint32_t)TEST_STATUS_CODE_MASK) << (uint32_t)TEST_STATUS_CODE_SHIFT) )
+#define RESULT_SKIP(status) \
+    ( (uint32_t)(TEST_SKIP) << (uint32_t)TEST_STATE_SHIFT | \
+      (((uint32_t)(status) & (uint32_t)TEST_STATUS_CODE_MASK) << (uint32_t)TEST_STATUS_CODE_SHIFT) )
+#define RESULT_ERROR(status) \
+    ( (uint32_t)(TEST_ERROR) << (uint32_t)TEST_STATE_SHIFT | \
+      (((uint32_t)(status) & (uint32_t)TEST_STATUS_CODE_MASK) << (uint32_t)TEST_STATUS_CODE_SHIFT) )
 
-#define IS_TEST_FAIL(status)    (((status >> TEST_STATE_SHIFT) & TEST_STATE_MASK) == TEST_FAIL)
-#define IS_TEST_PASS(status)    (((status >> TEST_STATE_SHIFT) & TEST_STATE_MASK) == TEST_PASS)
-#define IS_TEST_SKIP(status)    (((status >> TEST_STATE_SHIFT) & TEST_STATE_MASK) == TEST_SKIP)
-#define IS_TEST_ERROR(status)   (((status >> TEST_STATE_SHIFT) & TEST_STATE_MASK) == TEST_ERROR)
-#define IS_TEST_START(status)   (((status >> TEST_STATE_SHIFT) & TEST_STATE_MASK) == TEST_START)
-#define IS_TEST_END(status)     (((status >> TEST_STATE_SHIFT) & TEST_STATE_MASK) == TEST_END)
-#define IS_STATUS_FAIL(status)  ((status & TEST_STATUS_CODE_MASK) ? 1 : 0)
+#define IS_TEST_FAIL(status)    ((((uint32_t)(status) >> (uint32_t)TEST_STATE_SHIFT) & (uint32_t)TEST_STATE_MASK) == (uint32_t)TEST_FAIL)
+#define IS_TEST_PASS(status)    ((((uint32_t)(status) >> (uint32_t)TEST_STATE_SHIFT) & (uint32_t)TEST_STATE_MASK) == (uint32_t)TEST_PASS)
+#define IS_TEST_SKIP(status)    ((((uint32_t)(status) >> (uint32_t)TEST_STATE_SHIFT) & (uint32_t)TEST_STATE_MASK) == (uint32_t)TEST_SKIP)
+#define IS_TEST_ERROR(status)   ((((uint32_t)(status) >> (uint32_t)TEST_STATE_SHIFT) & (uint32_t)TEST_STATE_MASK) == (uint32_t)TEST_ERROR)
+#define IS_TEST_START(status)   ((((uint32_t)(status) >> (uint32_t)TEST_STATE_SHIFT) & (uint32_t)TEST_STATE_MASK) == (uint32_t)TEST_START)
+#define IS_TEST_END(status)     ((((uint32_t)(status) >> (uint32_t)TEST_STATE_SHIFT) & (uint32_t)TEST_STATE_MASK) == (uint32_t)TEST_END)
+#define IS_STATUS_FAIL(status)  ((((uint32_t)(status)) & (uint32_t)TEST_STATUS_CODE_MASK) ? 1u : 0u)
 
 
 /* NVM Indext size */
-#define VAL_NVM_BLOCK_SIZE       4
-#define VAL_NVM_OFFSET(nvm_idx)  (nvm_idx * VAL_NVM_BLOCK_SIZE)
+#define VAL_NVM_BLOCK_SIZE       4u
+#define VAL_NVM_OFFSET(nvm_idx)  ((uint32_t)(nvm_idx) * (uint32_t)VAL_NVM_BLOCK_SIZE)
 
 typedef enum {
     NVM_PLATFORM_RESERVE_INDEX  =  0x0,
