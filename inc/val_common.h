@@ -9,6 +9,7 @@
 #define VAL_COMMON_H
 
 #include "pal_common_val_intf.h"
+#include <stdint.h>
 
 /* Various test status codes, Max value = 0xff */
 #define  VAL_SUCCESS            0
@@ -21,10 +22,36 @@
 #define  VAL_STATUS_ERROR_MAX   255
 #define  VAL_INVALID_TEST_NUM   0xFFFFFFFF
 
-#define VAL_BIT_MASK(len) ((1 << len) - 1)
+/*
+ * Safe helpers to avoid multiple evaluation of macro arguments
+ * and ensure well-defined behavior with proper types.
+ */
+static inline uint32_t val_bit_mask(uint32_t len)
+{
+    /* If len >= 32, return full mask; shifting a 32-bit 1 by >=32 is UB */
+    if (len >= 32U) {
+        return 0xFFFFFFFFu;
+    }
+    return (len == 0U) ? 0U : ((1u << len) - 1u);
+}
+
+static inline uint32_t val_set_bits(uint32_t data, uint32_t pos, uint32_t len, uint32_t val)
+{
+    /* Build mask at position and set only the relevant bits from val */
+    uint32_t mask = val_bit_mask(len);
+
+    /* Avoid undefined shift: if pos >= 32, mask_at_pos becomes 0 */
+    uint32_t mask_at_pos = (pos >= 32U) ? 0U : (mask << pos);
+    uint32_t val_at_pos  = (pos >= 32U) ? 0U : ((val & mask) << pos);
+
+    return (data & ~mask_at_pos) | val_at_pos;
+}
+
+/* Backward-compatible macros that evaluate arguments exactly once */
+#define VAL_BIT_MASK(len)            val_bit_mask((uint32_t)(len))
 /* Set the value in given position */
-#define VAL_SET_BITS(data, pos, len, val) (((uint32_t)(~(uint32_t)0 & ~(uint32_t) \
-                    (VAL_BIT_MASK(len) << pos)) & data) | (val << pos))
+#define VAL_SET_BITS(data, pos, len, val) \
+    val_set_bits((uint32_t)(data), (uint32_t)(pos), (uint32_t)(len), (uint32_t)(val))
 
 
 /* Test state macros */
