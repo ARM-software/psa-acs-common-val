@@ -13,9 +13,27 @@
  *            -  buffer  : Pointer to destination address
  *            -  size    : Number of bytes
  *   @return  -  SUCCESS/FAILURE
+ *
+ *   Validates parameters to avoid integer overflow in (offset + size)
+ *   computation and null buffer dereference when size > 0.
 **/
 uint32_t val_nvm_read(uint32_t offset, void *buffer, size_t size)
 {
+      /* Zero-length read is a no-op */
+      if (size == 0u) {
+          return VAL_SUCCESS;
+      }
+
+      /* Buffer must be valid for non-zero size */
+      if (buffer == NULL) {
+          return VAL_STATUS_INVALID;
+      }
+
+      /* Prevent 32-bit overflow in (offset + size) calculation */
+      if (size > (size_t)(UINT32_MAX - offset)) {
+          return VAL_STATUS_INVALID;
+      }
+
       return pal_nvm_read(offset, buffer, size);
 }
 
@@ -26,9 +44,27 @@ uint32_t val_nvm_read(uint32_t offset, void *buffer, size_t size)
  *             -  buffer  : Pointer to source address
  *             -  size    : Number of bytes
  *    @return  -  SUCCESS/FAILURE
+ *
+ *    Validates parameters to avoid integer overflow in (offset + size)
+ *    computation and null buffer dereference when size > 0.
 **/
 uint32_t val_nvm_write(uint32_t offset, void *buffer, size_t size)
 {
+      /* Zero-length write is a no-op */
+      if (size == 0u) {
+          return VAL_SUCCESS;
+      }
+
+      /* Buffer must be valid for non-zero size */
+      if (buffer == NULL) {
+          return VAL_STATUS_INVALID;
+      }
+
+      /* Prevent 32-bit overflow in (offset + size) calculation */
+      if (size > (size_t)(UINT32_MAX - offset)) {
+          return VAL_STATUS_INVALID;
+      }
+
       return pal_nvm_write(offset, buffer, size);
 }
 
