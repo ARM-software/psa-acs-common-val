@@ -8,8 +8,24 @@
 #include "val_common_status.h"
 #include "val_common_log.h"
 #include <stdatomic.h>
+#include <stdint.h>
 
 static _Atomic uint64_t width;
+
+/*
+ * Compute the MSB bit for a given width safely.
+ * - ipa_width == 0  -> 0 (no bit)
+ * - ipa_width >= 64 -> bit 63 (clamped to 63 for 64-bit operand)
+ * - otherwise       -> bit (ipa_width - 1)
+ */
+static inline uint64_t safe_msb_bit(uint64_t ipa_width)
+{
+    if (ipa_width == 0)
+        return 0ull;
+    if (ipa_width >= 64)
+        return (1ull << 63);
+    return (1ull << (ipa_width - 1));
+}
 
 /**
  *   @brief    Returns the IPA address of the shared region
@@ -20,7 +36,7 @@ void *val_base_addr_ipa(uint64_t ipa_width)
 {
     atomic_store_explicit(&width, ipa_width, memory_order_release);
     return (void *)(uintptr_t)(VAL_NS_SHARED_REGION_IPA_OFFSET |
-                               (1ull << (ipa_width - 1)));
+                               safe_msb_bit(ipa_width));
 }
 
 /**
@@ -43,7 +59,7 @@ void *val_get_shared_region_base(void)
     uint64_t w = atomic_load_explicit(&width, memory_order_acquire);
     if (w)
         return (void *)(uintptr_t)(VAL_NS_SHARED_REGION_IPA_OFFSET |
-                                   (1ull << (w - 1)));
+                                   safe_msb_bit(w));
 
     return val_get_shared_region_base_pa();
 }
