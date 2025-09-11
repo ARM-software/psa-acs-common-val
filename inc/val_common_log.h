@@ -10,7 +10,15 @@
 
 #include "val_common.h"
 
-/* Verbosity enums, Lower the value, higher the verbosity */
+/*
+ * Verbosity levels.
+ *
+ * Lower numeric value means more verbose (i.e. a lower VERBOSITY threshold
+ * enables more chatty logs). The level 'ALWAYS' is a special case intended to
+ * be printed regardless of the VERBOSITY threshold. It therefore uses the
+ * highest numeric value to ensure the check `verbosity >= VERBOSITY` passes
+ * for any configured threshold.
+ */
 typedef enum {
     INFO    = 1,
     DBG     = 2,
