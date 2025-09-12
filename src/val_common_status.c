@@ -114,24 +114,24 @@ uint32_t val_report_status(void)
 
         case TEST_FAIL:
             state = TEST_FAIL;
-            val_printf(ALWAYS, "Result=Failed (Error code=%d)\n",
+            val_printf(ALWAYS, "Result=Failed (Error code=%u)\n",
                 status_code);
             break;
 
         case TEST_SKIP:
             state = TEST_SKIP;
-            val_printf(ALWAYS, "Result=Skipped (Skip code=%d)\n",
+            val_printf(ALWAYS, "Result=Skipped (Skip code=%u)\n",
                 status_code);
             break;
 
         case TEST_ERROR:
             state = TEST_ERROR;
-            val_printf(ALWAYS, "Result=Error (Error code=%d)\n",
+            val_printf(ALWAYS, "Result=Error (Error code=%u)\n",
                 status_code);
             break;
         default:
             state = TEST_FAIL;
-            val_printf(ALWAYS, "Result=Failed (Error Code=%d)\n",
+            val_printf(ALWAYS, "Result=Failed (Error Code=%u)\n",
                 status_code);
             break;
     }
