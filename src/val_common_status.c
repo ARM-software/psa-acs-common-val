@@ -7,8 +7,9 @@
 
 #include "val_common_status.h"
 #include "val_common_log.h"
+#include <stdatomic.h>
 
-static uint64_t width;
+static _Atomic void *shared_region_base;
 
 /**
  *   @brief    Returns the IPA address of the shared region
@@ -17,8 +18,12 @@ static uint64_t width;
 **/
 void *val_base_addr_ipa(uint64_t ipa_width)
 {
-    width = ipa_width;
-    return ((void *)(uintptr_t)(VAL_NS_SHARED_REGION_IPA_OFFSET | (1ull << (width - 1))));
+    void *ipa_base = (void *)(uintptr_t)(VAL_NS_SHARED_REGION_IPA_OFFSET |
+                                         (1ull << (ipa_width - 1)));
+
+    atomic_store_explicit(&shared_region_base, ipa_base, memory_order_release);
+
+    return ipa_base;
 }
 
 /**
@@ -38,8 +43,10 @@ void *val_get_shared_region_base_pa(void)
 **/
 void *val_get_shared_region_base(void)
 {
-    if (width)
-        return val_base_addr_ipa(width);
+    void *ipa_base = atomic_load_explicit(&shared_region_base, memory_order_acquire);
+
+    if (ipa_base)
+        return ipa_base;
 
     return val_get_shared_region_base_pa();
 }
