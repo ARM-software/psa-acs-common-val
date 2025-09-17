@@ -56,8 +56,24 @@ void val_set_status(uint32_t status)
                                                   ((uint8_t *)val_get_shared_region_base() +
                                                    TEST_STATUS_OFFSET);
 
-    curr_test_status->state = state;
-    curr_test_status->status_code  = (status & TEST_STATUS_CODE_MASK);
+    /*
+     * Perform a single 16-bit atomic update of the packed {state, status_code}
+     * to avoid torn reads by other actors that access the pair directly.
+     * The pair in memory is laid out as [state][status_code]. Compose the
+     * halfword according to target endianness so that the bytes land in the
+     * correct order in memory when stored with one 16-bit write.
+     */
+    uint16_t halfword;
+#if defined(__BYTE_ORDER__) && (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
+    /* At lower address lies LSB on little-endian, which is 'state' here */
+    halfword = (uint16_t)((uint16_t)state | (((uint16_t)status & TEST_STATUS_CODE_MASK) << 8));
+#else
+    /* Big-endian: MSB at lower address -> 'state' goes to MSB */
+    halfword = (uint16_t)(((uint16_t)state << 8) | ((uint16_t)status & TEST_STATUS_CODE_MASK));
+#endif
+
+    volatile uint16_t *packed = (volatile uint16_t *)&curr_test_status->state;
+    *packed = halfword;
 }
 
 /**
@@ -70,8 +86,20 @@ uint32_t val_get_status(void)
     val_test_status_buffer_ts *curr_test_status = (val_test_status_buffer_ts *)
                                                   ((uint8_t *)val_get_shared_region_base() +
                                                    TEST_STATUS_OFFSET);
-    return (uint32_t)(((curr_test_status->state) << TEST_STATE_SHIFT) |
-            (curr_test_status->status_code));
+
+    /* Read the packed {state, status_code} with a single 16-bit load */
+    uint16_t halfword = *(volatile uint16_t *)&curr_test_status->state;
+    uint8_t state;
+    uint8_t status_code;
+#if defined(__BYTE_ORDER__) && (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
+    state = (uint8_t)(halfword & 0xFF);
+    status_code = (uint8_t)((halfword >> 8) & 0xFF);
+#else
+    state = (uint8_t)((halfword >> 8) & 0xFF);
+    status_code = (uint8_t)(halfword & 0xFF);
+#endif
+
+    return (uint32_t)(((uint32_t)state << TEST_STATE_SHIFT) | (uint32_t)status_code);
 }
 
 /**
