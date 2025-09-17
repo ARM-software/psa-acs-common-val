@@ -11,6 +11,20 @@
 
 extern const uint32_t total_tests;
 
+static void val_increment_regression_counter(uint32_t *counter, const char *counter_name)
+{
+    if (*counter == UINT32_MAX)
+    {
+        val_printf(ERROR,
+                   "Regression counter %s reached max value (%u); increment skipped\n",
+                   counter_name,
+                   UINT32_MAX);
+        return;
+    }
+
+    (*counter)++;
+}
+
 /**
  *   @brief   -  Logs the test_info details
  *   @param   -  test_info : Test information struct address
@@ -126,19 +140,25 @@ void val_handle_reboot_result(uint32_t test_progress)
  */
 void val_update_regression_report(uint32_t test_result, regre_report_t *regre_report)
 {
+    if (regre_report == NULL)
+    {
+        val_printf(ERROR, "Regression report pointer is NULL\n");
+        return;
+    }
+
     switch (test_result)
     {
         case TEST_PASS:
-            regre_report->total_pass++;
+            val_increment_regression_counter(&regre_report->total_pass, "total_pass");
             break;
         case TEST_FAIL:
-            regre_report->total_fail++;
+            val_increment_regression_counter(&regre_report->total_fail, "total_fail");
             break;
         case TEST_SKIP:
-            regre_report->total_skip++;
+            val_increment_regression_counter(&regre_report->total_skip, "total_skip");
             break;
         case TEST_ERROR:
-            regre_report->total_error++;
+            val_increment_regression_counter(&regre_report->total_error, "total_error");
             break;
     }
 }
