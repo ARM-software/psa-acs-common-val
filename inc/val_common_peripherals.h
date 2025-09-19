@@ -12,6 +12,10 @@
 
 uint32_t val_nvm_read(uint32_t offset, void *buffer, size_t size);
 uint32_t val_nvm_write(uint32_t offset, void *buffer, size_t size);
+/*
+ * Watchdog control APIs serialize access internally, ensuring that concurrent enable
+ * or disable requests are handled deterministically.
+ */
 uint32_t val_watchdog_enable(void);
 uint32_t val_watchdog_disable(void);
 
