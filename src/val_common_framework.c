@@ -208,14 +208,35 @@ void val_print_regression_report(regre_report_t *regre_report)
 }
 
 /**
- *  @brief   -  Copies 'len' bytes from source to destination buffer
- *  @param   -  dest : Destination buffer
- *           -  src  : Source buffer
- *           -  len  : Number of bytes to copy
+ *  @brief   -  Copies up to 'len' bytes from source to destination buffer
+ *  @param   -  dest       : Destination buffer
+ *           -  dest_size  : Size of the destination buffer in bytes
+ *           -  src        : Source buffer
+ *           -  len        : Number of bytes to copy
  *  @return  -  void
  */
-void val_mem_copy(char *dest, const char *src, size_t len)
+void val_mem_copy(char *dest, size_t dest_size, const char *src, size_t len)
 {
-    for (size_t i = 0; i < len; ++i)
-        dest[i] = src[i];
+    if (dest == NULL || src == NULL || dest_size == 0)
+        return;
+
+    size_t copy_len = len;
+
+    if (copy_len > dest_size)
+        copy_len = dest_size;
+
+    if (copy_len == 0 || dest == src)
+        return;
+
+    /* Copy backwards if ranges overlap such that forward copy corrupts data */
+    if (dest > src && dest < (src + copy_len))
+    {
+        for (size_t i = copy_len; i > 0; --i)
+            dest[i - 1] = src[i - 1];
+    }
+    else
+    {
+        for (size_t i = 0; i < copy_len; ++i)
+            dest[i] = src[i];
+    }
 }

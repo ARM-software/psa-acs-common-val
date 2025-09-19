@@ -8,6 +8,8 @@
 #ifndef VAL_COMMON_FRAMEWORK_H
 #define VAL_COMMON_FRAMEWORK_H
 
+#include <stddef.h>
+
 #include "val_common.h"
 
 typedef struct {
@@ -35,6 +37,6 @@ void val_handle_reboot_result(uint32_t test_progress);
 void val_update_regression_report(uint32_t test_result, regre_report_t *regre_report);
 void val_print_regression_report(regre_report_t *regre_report);
 
-void val_mem_copy(char *dest, const char *src, size_t len);
+void val_mem_copy(char *dest, size_t dest_size, const char *src, size_t len);
 
 #endif /* VAL_COMMON_FRAMEWORK_H */
