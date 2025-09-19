@@ -631,9 +631,12 @@ uint32_t val_printf(print_verbosity_t verbosity, const char *msg, ...)
             }
         }
 
-        if (len > 0 && msg[len - 1] == '\n')
+        const bool has_newline = (len > 0) && (msg[len - 1] == '\n');
+        const bool truncated = (len == LOG_MAX_STRING_LENGTH - 2); /* log_strnlen_s hit the scan limit */
+
+        if (has_newline)
         {
-            val_mem_copy(formatted_msg, msg, len - 1);
+            val_mem_copy(formatted_msg, sizeof(formatted_msg), msg, len - 1);
             formatted_msg[len - 1] = '\r';
             formatted_msg[len] = '\n';
             formatted_msg[len + 1] = '\0';
@@ -643,7 +646,16 @@ uint32_t val_printf(print_verbosity_t verbosity, const char *msg, ...)
         }
         else
         {
-            chars_written = val_log(msg, args);
+            if (truncated)
+            {
+                val_mem_copy(formatted_msg, sizeof(formatted_msg), msg, len);
+                formatted_msg[len] = '\0';
+                chars_written = val_log(formatted_msg, args);
+            }
+            else
+            {
+                chars_written = val_log(msg, args);
+            }
             lastWasNewline = false;
         }
     }
