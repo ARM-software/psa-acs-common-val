@@ -8,6 +8,7 @@
 #include "val_common_status.h"
 #include "val_common_log.h"
 #include <stdatomic.h>
+#include <limits.h>
 
 static _Atomic void *shared_region_base;
 
@@ -18,8 +19,19 @@ static _Atomic void *shared_region_base;
 **/
 void *val_base_addr_ipa(uint64_t ipa_width)
 {
-    void *ipa_base = (void *)(uintptr_t)(VAL_NS_SHARED_REGION_IPA_OFFSET |
-                                         (1ull << (ipa_width - 1)));
+    uint64_t ipa_bit = 0;
+
+    if (ipa_width != 0) {
+        uint64_t max_shift = (sizeof(uint64_t) * CHAR_BIT) - 1;
+        uint64_t shift = ipa_width - 1;
+
+        if (shift > max_shift)
+            shift = max_shift;
+
+        ipa_bit = 1ull << shift;
+    }
+
+    void *ipa_base = (void *)(uintptr_t)(VAL_NS_SHARED_REGION_IPA_OFFSET | ipa_bit);
 
     atomic_store_explicit(&shared_region_base, ipa_base, memory_order_release);
 
