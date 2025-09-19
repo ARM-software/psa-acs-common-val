@@ -465,10 +465,11 @@ static size_t val_log(const char *fmt, va_list args)
 
             case 's': {
                 char *str = va_arg(args, char *);
+                const char *safe_str = (str != NULL) ? str : "(null)";
 
                 fmt++;
                 chars_written += print_string(
-                    str, str, min_width, &flags, ' ');
+                    safe_str, safe_str, min_width, &flags, ' ');
                 break;
             }
 
