@@ -13,16 +13,29 @@ extern const uint32_t total_tests;
 
 static void val_increment_regression_counter(uint32_t *counter, const char *counter_name)
 {
-    if (*counter == UINT32_MAX)
-    {
-        val_printf(ERROR,
-                   "Regression counter %s reached max value (%u); increment skipped\n",
-                   counter_name,
-                   UINT32_MAX);
-        return;
-    }
+    uint32_t current_value = __atomic_load_n(counter, __ATOMIC_RELAXED);
 
-    (*counter)++;
+    while (1)
+    {
+        if (current_value == UINT32_MAX)
+        {
+            val_printf(ERROR,
+                       "Regression counter %s reached max value (%u); increment skipped\n",
+                       counter_name,
+                       UINT32_MAX);
+            return;
+        }
+
+        if (__atomic_compare_exchange_n(counter,
+                                         &current_value,
+                                         current_value + 1U,
+                                         1,
+                                         __ATOMIC_ACQ_REL,
+                                         __ATOMIC_RELAXED))
+        {
+            return;
+        }
+    }
 }
 
 /**
@@ -75,10 +88,10 @@ void val_reset_test_info_fields(test_info_t *test_info)
  */
 void val_reset_regression_report(regre_report_t *report)
 {
-    report->total_pass  = 0;
-    report->total_fail  = 0;
-    report->total_skip  = 0;
-    report->total_error = 0;
+    __atomic_store_n(&report->total_pass, 0U, __ATOMIC_RELAXED);
+    __atomic_store_n(&report->total_fail, 0U, __ATOMIC_RELAXED);
+    __atomic_store_n(&report->total_skip, 0U, __ATOMIC_RELAXED);
+    __atomic_store_n(&report->total_error, 0U, __ATOMIC_RELAXED);
 }
 
 /**
@@ -89,12 +102,17 @@ void val_reset_regression_report(regre_report_t *report)
 **/
 void val_log_final_test_status(test_info_t *test_info, regre_report_t *regre_report)
 {
+    uint32_t total_pass  = __atomic_load_n(&regre_report->total_pass, __ATOMIC_RELAXED);
+    uint32_t total_fail  = __atomic_load_n(&regre_report->total_fail, __ATOMIC_RELAXED);
+    uint32_t total_skip  = __atomic_load_n(&regre_report->total_skip, __ATOMIC_RELAXED);
+    uint32_t total_error = __atomic_load_n(&regre_report->total_error, __ATOMIC_RELAXED);
+
     val_printf(INFO, "In val_get_last_run_test_num, test_num=%x\n", test_info->test_num);
     val_printf(INFO, "suite_num=%x\n", test_info->suite_num);
-    val_printf(INFO, "regre_report.total_pass=%x\n", regre_report->total_pass);
-    val_printf(INFO, "regre_report.total_fail=%x\n", regre_report->total_fail);
-    val_printf(INFO, "regre_report.total_skip=%x\n", regre_report->total_skip);
-    val_printf(INFO, "regre_report.total_error=%x\n", regre_report->total_error);
+    val_printf(INFO, "regre_report.total_pass=%x\n", total_pass);
+    val_printf(INFO, "regre_report.total_fail=%x\n", total_fail);
+    val_printf(INFO, "regre_report.total_skip=%x\n", total_skip);
+    val_printf(INFO, "regre_report.total_error=%x\n", total_error);
 }
 
 /**
@@ -170,18 +188,20 @@ void val_update_regression_report(uint32_t test_result, regre_report_t *regre_re
  */
 void val_print_regression_report(regre_report_t *regre_report)
 {
+    uint32_t total_pass  = __atomic_load_n(&regre_report->total_pass, __ATOMIC_RELAXED);
+    uint32_t total_fail  = __atomic_load_n(&regre_report->total_fail, __ATOMIC_RELAXED);
+    uint32_t total_skip  = __atomic_load_n(&regre_report->total_skip, __ATOMIC_RELAXED);
+    uint32_t total_error = __atomic_load_n(&regre_report->total_error, __ATOMIC_RELAXED);
+    uint32_t total_tests = total_pass + total_fail + total_skip + total_error;
+
     val_printf(ALWAYS, "\n\n");
     val_printf(ALWAYS, "REGRESSION REPORT: \n");
     val_printf(ALWAYS, "==========================\n");
-    val_printf(ALWAYS, "   TOTAL TESTS     : %d\n",
-        (uint32_t)(regre_report->total_pass +
-                   regre_report->total_fail +
-                   regre_report->total_skip +
-                   regre_report->total_error), 0);
-    val_printf(ALWAYS, "   TOTAL PASSED    : %d\n", regre_report->total_pass);
-    val_printf(ALWAYS, "   TOTAL FAILED    : %d\n", regre_report->total_fail);
-    val_printf(ALWAYS, "   TOTAL SKIPPED   : %d\n", regre_report->total_skip);
-    val_printf(ALWAYS, "   TOTAL SIM ERROR : %d\n", regre_report->total_error);
+    val_printf(ALWAYS, "   TOTAL TESTS     : %d\n", total_tests, 0);
+    val_printf(ALWAYS, "   TOTAL PASSED    : %d\n", total_pass);
+    val_printf(ALWAYS, "   TOTAL FAILED    : %d\n", total_fail);
+    val_printf(ALWAYS, "   TOTAL SKIPPED   : %d\n", total_skip);
+    val_printf(ALWAYS, "   TOTAL SIM ERROR : %d\n", total_error);
     val_printf(ALWAYS, "==========================\n");
     val_printf(ALWAYS, "******* END OF ACS *******\n");
     val_printf(ALWAYS, "\n");
