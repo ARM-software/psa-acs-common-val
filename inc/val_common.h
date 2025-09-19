@@ -8,6 +8,8 @@
 #ifndef VAL_COMMON_H
 #define VAL_COMMON_H
 
+#include <stdint.h>
+
 #include "pal_common_val_intf.h"
 
 /* Various test status codes, Max value = 0xff */
@@ -21,10 +23,46 @@
 #define  VAL_STATUS_ERROR_MAX   255
 #define  VAL_INVALID_TEST_NUM   0xFFFFFFFF
 
-#define VAL_BIT_MASK(len) ((1 << len) - 1)
-/* Set the value in given position */
-#define VAL_SET_BITS(data, pos, len, val) (((uint32_t)(~(uint32_t)0 & ~(uint32_t) \
-                    (VAL_BIT_MASK(len) << pos)) & data) | (val << pos))
+static inline uint32_t val_bit_mask(int32_t len)
+{
+    if (len <= 0) {
+        return 0U;
+    }
+
+    if ((uint32_t)len >= 32U) {
+        return UINT32_MAX;
+    }
+
+    return (UINT32_C(1) << (uint32_t)len) - 1U;
+}
+
+#define VAL_BIT_MASK(len) val_bit_mask((int32_t)(len))
+static inline uint32_t val_set_bits(uint32_t data, int32_t pos, int32_t len, uint32_t value)
+{
+    if (pos < 0 || len <= 0) {
+        return data;
+    }
+
+    if ((uint32_t)pos >= 32U) {
+        return data;
+    }
+
+    uint32_t u_pos = (uint32_t)pos;
+    uint32_t u_len = (uint32_t)len;
+
+    if (u_len > (32U - u_pos)) {
+        u_len = 32U - u_pos;
+    }
+
+    const uint32_t mask = VAL_BIT_MASK(u_len);
+    const uint32_t clear_mask = ~(mask << u_pos);
+    const uint32_t new_bits = (value & mask) << u_pos;
+
+    return (data & clear_mask) | new_bits;
+}
+
+#define VAL_SET_BITS(data, pos, len, val) \
+    val_set_bits((uint32_t)(data), (int32_t)(pos), (int32_t)(len), (uint32_t)(val))
 
 
 /* Test state macros */
