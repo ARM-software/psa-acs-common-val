@@ -27,6 +27,14 @@ typedef enum {
  *   @param    - ...        : ellipses for variadic args
  *   @return   - SUCCESS((Any positive number for character written)/FAILURE(0))
 **/
-uint32_t val_printf(print_verbosity_t verbosity, const char *msg, ...);
+#if defined(__GNUC__) || defined(__clang__)
+#define VAL_PRINTF_ATTR __attribute__((format(printf, 2, 3)))
+#else
+#define VAL_PRINTF_ATTR
+#endif
+
+uint32_t val_printf(print_verbosity_t verbosity, const char *msg, ...) VAL_PRINTF_ATTR;
+
+#undef VAL_PRINTF_ATTR
 
 #endif /* VAL_COMMON_LOG_H */
