@@ -6,6 +6,7 @@
  */
 
 #include <limits.h>
+#include <stdint.h>
 
 #include "val_common_log.h"
 #include "val_common_framework.h"
@@ -440,6 +441,9 @@ static uint64_t reinterpret_signed_int(enum format_length length, uint64_t value
     case length_ptrdiff:
         if ((int64_t)signed_value < 0) {
             flags->neg = true;
+            if ((int64_t)signed_value == INT64_MIN) {
+                return 1ULL << 63;
+            }
             signed_value = -signed_value;
         }
         break;

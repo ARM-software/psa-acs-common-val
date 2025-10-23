@@ -1,17 +1,22 @@
-diff --git a/src/val_common_framework.c b/src/val_common_framework.c
-index eb91cde..fb75efb 100644
---- a/src/val_common_framework.c
-+++ b/src/val_common_framework.c
-@@ -88,6 +88,12 @@ void val_reset_test_info_fields(test_info_t *test_info)
+diff --git a/src/val_common_log.c b/src/val_common_log.c
+index 72af231..d30ada7 100644
+--- a/src/val_common_log.c
++++ b/src/val_common_log.c
+@@ -6,6 +6,7 @@
   */
- void val_reset_regression_report(regre_report_t *report)
- {
-+    if (report == NULL)
-+    {
-+        val_printf(ERROR, "Regression report pointer is NULL\n");
-+        return;
-+    }
-+
-     __atomic_store_n(&report->total_pass, 0U, __ATOMIC_RELAXED);
-     __atomic_store_n(&report->total_fail, 0U, __ATOMIC_RELAXED);
-     __atomic_store_n(&report->total_skip, 0U, __ATOMIC_RELAXED);
+ 
+ #include <limits.h>
++#include <stdint.h>
+ 
+ #include "val_common_log.h"
+ #include "val_common_framework.h"
+@@ -440,6 +441,9 @@ static uint64_t reinterpret_signed_int(enum format_length length, uint64_t value
+     case length_ptrdiff:
+         if ((int64_t)signed_value < 0) {
+             flags->neg = true;
++            if ((int64_t)signed_value == INT64_MIN) {
++                return 1ULL << 63;
++            }
+             signed_value = -signed_value;
+         }
+         break;
