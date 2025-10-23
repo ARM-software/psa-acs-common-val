@@ -1,41 +1,17 @@
-diff --git a/src/val_common_status.c b/src/val_common_status.c
-index a3b7b4c..10096a5 100644
---- a/src/val_common_status.c
-+++ b/src/val_common_status.c
-@@ -7,6 +7,7 @@
- 
- #include "val_common_status.h"
- #include "val_common_log.h"
-+#include <inttypes.h>
- #include <stdatomic.h>
- #include <limits.h>
- 
-@@ -113,24 +114,24 @@ uint32_t val_report_status(void)
- 
-         case TEST_FAIL:
-             state = TEST_FAIL;
--            val_printf(ALWAYS, "Result=Failed (Error code=%d)\n",
-+            val_printf(ALWAYS, "Result=Failed (Error code=%" PRIu32 ")\n",
-                 status_code);
-             break;
- 
-         case TEST_SKIP:
-             state = TEST_SKIP;
--            val_printf(ALWAYS, "Result=Skipped (Skip code=%d)\n",
-+            val_printf(ALWAYS, "Result=Skipped (Skip code=%" PRIu32 ")\n",
-                 status_code);
-             break;
- 
-         case TEST_ERROR:
-             state = TEST_ERROR;
--            val_printf(ALWAYS, "Result=Error (Error code=%d)\n",
-+            val_printf(ALWAYS, "Result=Error (Error code=%" PRIu32 ")\n",
-                 status_code);
-             break;
-         default:
-             state = TEST_FAIL;
--            val_printf(ALWAYS, "Result=Failed (Error Code=%d)\n",
-+            val_printf(ALWAYS, "Result=Failed (Error Code=%" PRIu32 ")\n",
-                 status_code);
-             break;
-     }
+diff --git a/src/val_common_framework.c b/src/val_common_framework.c
+index de1c85e..b983da9 100644
+--- a/src/val_common_framework.c
++++ b/src/val_common_framework.c
+@@ -102,6 +102,12 @@ void val_reset_regression_report(regre_report_t *report)
+ **/
+ void val_log_final_test_status(test_info_t *test_info, regre_report_t *regre_report)
+ {
++    if (regre_report == NULL)
++    {
++        val_printf(ERROR, "Regression report pointer is NULL\n");
++        return;
++    }
++
+     uint32_t total_pass  = __atomic_load_n(&regre_report->total_pass, __ATOMIC_RELAXED);
+     uint32_t total_fail  = __atomic_load_n(&regre_report->total_fail, __ATOMIC_RELAXED);
+     uint32_t total_skip  = __atomic_load_n(&regre_report->total_skip, __ATOMIC_RELAXED);

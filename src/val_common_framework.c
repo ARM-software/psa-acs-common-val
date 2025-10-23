@@ -102,6 +102,12 @@ void val_reset_regression_report(regre_report_t *report)
 **/
 void val_log_final_test_status(test_info_t *test_info, regre_report_t *regre_report)
 {
+    if (regre_report == NULL)
+    {
+        val_printf(ERROR, "Regression report pointer is NULL\n");
+        return;
+    }
+
     uint32_t total_pass  = __atomic_load_n(&regre_report->total_pass, __ATOMIC_RELAXED);
     uint32_t total_fail  = __atomic_load_n(&regre_report->total_fail, __ATOMIC_RELAXED);
     uint32_t total_skip  = __atomic_load_n(&regre_report->total_skip, __ATOMIC_RELAXED);
