@@ -1,255 +1,41 @@
-diff --git a/src/val_common_log.c b/src/val_common_log.c
-index ba739c6..1a71ad4 100644
---- a/src/val_common_log.c
-+++ b/src/val_common_log.c
-@@ -36,10 +36,14 @@ enum format_base {
- };
+diff --git a/src/val_common_status.c b/src/val_common_status.c
+index a3b7b4c..10096a5 100644
+--- a/src/val_common_status.c
++++ b/src/val_common_status.c
+@@ -7,6 +7,7 @@
  
- enum format_length {
--    length8 = 8,
--    length16 = 16,
--    length32 = 32,
--    length64 = 64,
-+    length_char,
-+    length_short,
-+    length_int,
-+    length_long,
-+    length_long_long,
-+    length_intmax,
-+    length_size,
-+    length_ptrdiff,
- };
+ #include "val_common_status.h"
+ #include "val_common_log.h"
++#include <inttypes.h>
+ #include <stdatomic.h>
+ #include <limits.h>
  
- #ifndef STATIC_ASSERT_CHECKS
-@@ -286,30 +290,34 @@ static const char *parse_length_modifier(const char *fmt,
-         fmt++;
-         if (*fmt == 'h') {
-             fmt++;
--            *length = length8;
-+            *length = length_char;
-         } else {
--            *length = length16;
-+            *length = length_short;
-         }
-         break;
-     case 'l':
-         fmt++;
-         if (*fmt == 'l') {
-             fmt++;
--            *length = length64;
-+            *length = length_long_long;
-         } else {
--            *length = length64;
-+            *length = length_long;
-         }
-         break;
--
-     case 'j':
-+        fmt++;
-+        *length = length_intmax;
-+        break;
-     case 'z':
-+        fmt++;
-+        *length = length_size;
-+        break;
-     case 't':
-         fmt++;
--        *length = length64;
-+        *length = length_ptrdiff;
-         break;
--
-     default:
--        *length = length32;
-+        *length = length_int;
-         break;
+@@ -113,24 +114,24 @@ uint32_t val_report_status(void)
+ 
+         case TEST_FAIL:
+             state = TEST_FAIL;
+-            val_printf(ALWAYS, "Result=Failed (Error code=%d)\n",
++            val_printf(ALWAYS, "Result=Failed (Error code=%" PRIu32 ")\n",
+                 status_code);
+             break;
+ 
+         case TEST_SKIP:
+             state = TEST_SKIP;
+-            val_printf(ALWAYS, "Result=Skipped (Skip code=%d)\n",
++            val_printf(ALWAYS, "Result=Skipped (Skip code=%" PRIu32 ")\n",
+                 status_code);
+             break;
+ 
+         case TEST_ERROR:
+             state = TEST_ERROR;
+-            val_printf(ALWAYS, "Result=Error (Error code=%d)\n",
++            val_printf(ALWAYS, "Result=Error (Error code=%" PRIu32 ")\n",
+                 status_code);
+             break;
+         default:
+             state = TEST_FAIL;
+-            val_printf(ALWAYS, "Result=Failed (Error Code=%d)\n",
++            val_printf(ALWAYS, "Result=Failed (Error Code=%" PRIu32 ")\n",
+                 status_code);
+             break;
      }
- 
-@@ -360,13 +368,17 @@ static const char *parse_min_width(const char *fmt, va_list args,
- static uint64_t reinterpret_unsigned_int(enum format_length length, uint64_t value)
- {
-     switch (length) {
--    case length8:
-+    case length_char:
-         return (uint8_t)value;
--    case length16:
-+    case length_short:
-         return (uint16_t)value;
--    case length32:
-+    case length_int:
-         return (uint32_t)value;
--    case length64:
-+    case length_long:
-+    case length_long_long:
-+    case length_intmax:
-+    case length_size:
-+    case length_ptrdiff:
-         return value;
-     }
-     return 0;
-@@ -387,25 +399,29 @@ static uint64_t reinterpret_signed_int(enum format_length length, uint64_t value
-     int64_t signed_value = (int64_t)reinterpret_unsigned_int(length, value);
- 
-     switch (length) {
--    case length8:
-+    case length_char:
-         if ((int8_t)signed_value < 0) {
-             flags->neg = true;
-             signed_value = (-signed_value) & 0xFF;
-         }
-         break;
--    case length16:
-+    case length_short:
-         if ((int16_t)signed_value < 0) {
-             flags->neg = true;
-             signed_value = (-signed_value) & 0xFFFF;
-         }
-         break;
--    case length32:
-+    case length_int:
-         if ((int32_t)signed_value < 0) {
-             flags->neg = true;
-             signed_value = (-signed_value) & 0xFFFFFFFF;
-         }
-         break;
--    case length64:
-+    case length_long:
-+    case length_long_long:
-+    case length_intmax:
-+    case length_size:
-+    case length_ptrdiff:
-         if ((int64_t)signed_value < 0) {
-             flags->neg = true;
-             signed_value = -signed_value;
-@@ -416,6 +432,51 @@ static uint64_t reinterpret_signed_int(enum format_length length, uint64_t value
-     return (uint64_t)signed_value;
- }
- 
-+static uint64_t read_signed_argument(va_list *args, enum format_length length)
-+{
-+    switch (length) {
-+    case length_char:
-+    case length_short:
-+    case length_int:
-+        return (uint64_t)va_arg(*args, int);
-+    case length_long:
-+        return (uint64_t)va_arg(*args, long);
-+    case length_long_long:
-+        return (uint64_t)va_arg(*args, long long);
-+    case length_intmax:
-+        return (uint64_t)va_arg(*args, intmax_t);
-+    case length_size:
-+        return (uint64_t)va_arg(*args, size_t);
-+    case length_ptrdiff:
-+        return (uint64_t)va_arg(*args, ptrdiff_t);
-+    }
-+    return 0;
-+}
-+
-+static uint64_t read_unsigned_argument(va_list *args, enum format_length length)
-+{
-+    switch (length) {
-+    case length_char:
-+    case length_short: {
-+        int value = va_arg(*args, int);
-+        return (uint64_t)(unsigned int)value;
-+    }
-+    case length_int:
-+        return (uint64_t)va_arg(*args, unsigned int);
-+    case length_long:
-+        return (uint64_t)va_arg(*args, unsigned long);
-+    case length_long_long:
-+        return (uint64_t)va_arg(*args, unsigned long long);
-+    case length_intmax:
-+        return (uint64_t)va_arg(*args, uintmax_t);
-+    case length_size:
-+        return (uint64_t)va_arg(*args, size_t);
-+    case length_ptrdiff:
-+        return (uint64_t)va_arg(*args, ptrdiff_t);
-+    }
-+    return 0;
-+}
-+
- /**
-  *   @brief    - This function parses and formats a string according to specified format specifiers
-  *   @param    - fmt      : Input String
-@@ -438,7 +499,7 @@ static size_t val_log(const char *fmt, va_list args)
-         case '%': {
-             struct format_flags flags = {0};
-             int min_width = 0;
--            enum format_length length = length32;
-+            enum format_length length = length_int;
-             uint64_t value;
- 
-             fmt++;
-@@ -476,7 +537,7 @@ static size_t val_log(const char *fmt, va_list args)
-             case 'd':
-             case 'i': {
-                 fmt++;
--                value = va_arg(args, uint64_t);
-+                value = read_signed_argument(&args, length);
-                 value = reinterpret_signed_int(length, value,
-                                    &flags);
- 
-@@ -487,7 +548,7 @@ static size_t val_log(const char *fmt, va_list args)
- 
-             case 'b':
-                 fmt++;
--                value = va_arg(args, uint64_t);
-+                value = read_unsigned_argument(&args, length);
-                 value = reinterpret_unsigned_int(length, value);
- 
-                 chars_written += print_int(value, base2,
-@@ -497,7 +558,7 @@ static size_t val_log(const char *fmt, va_list args)
-             case 'B':
-                 fmt++;
-                 flags.upper = true;
--                value = va_arg(args, uint64_t);
-+                value = read_unsigned_argument(&args, length);
-                 value = reinterpret_unsigned_int(length, value);
- 
-                 chars_written += print_int(value, base2,
-@@ -506,7 +567,7 @@ static size_t val_log(const char *fmt, va_list args)
- 
-             case 'o':
-                 fmt++;
--                value = va_arg(args, uint64_t);
-+                value = read_unsigned_argument(&args, length);
-                 value = reinterpret_unsigned_int(length, value);
- 
-                 chars_written += print_int(value, base8,
-@@ -515,7 +576,7 @@ static size_t val_log(const char *fmt, va_list args)
- 
-             case 'x':
-                 fmt++;
--                value = va_arg(args, uint64_t);
-+                value = read_unsigned_argument(&args, length);
-                 value = reinterpret_unsigned_int(length, value);
- 
-                 chars_written += print_int(value, base16,
-@@ -525,7 +586,7 @@ static size_t val_log(const char *fmt, va_list args)
-             case 'X':
-                 fmt++;
-                 flags.upper = true;
--                value = va_arg(args, uint64_t);
-+                value = read_unsigned_argument(&args, length);
-                 value = reinterpret_unsigned_int(length, value);
- 
-                 chars_written += print_int(value, base16,
-@@ -534,7 +595,7 @@ static size_t val_log(const char *fmt, va_list args)
- 
-             case 'u':
-                 fmt++;
--                value = va_arg(args, uint64_t);
-+                value = read_unsigned_argument(&args, length);
-                 value = reinterpret_unsigned_int(length, value);
- 
-                 chars_written += print_int(value, base10,
-@@ -543,7 +604,7 @@ static size_t val_log(const char *fmt, va_list args)
- 
-             case 'p':
-                 fmt++;
--                value = va_arg(args, uint64_t);
-+                value = (uint64_t)(uintptr_t)va_arg(args, void *);
-                 min_width = sizeof(size_t) * 2 + 2;
-                 flags.zero = true;
-                 flags.alt = true;

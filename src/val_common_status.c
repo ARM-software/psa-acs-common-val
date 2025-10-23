@@ -7,6 +7,7 @@
 
 #include "val_common_status.h"
 #include "val_common_log.h"
+#include <inttypes.h>
 #include <stdatomic.h>
 #include <limits.h>
 
@@ -113,24 +114,24 @@ uint32_t val_report_status(void)
 
         case TEST_FAIL:
             state = TEST_FAIL;
-            val_printf(ALWAYS, "Result=Failed (Error code=%d)\n",
+            val_printf(ALWAYS, "Result=Failed (Error code=%" PRIu32 ")\n",
                 status_code);
             break;
 
         case TEST_SKIP:
             state = TEST_SKIP;
-            val_printf(ALWAYS, "Result=Skipped (Skip code=%d)\n",
+            val_printf(ALWAYS, "Result=Skipped (Skip code=%" PRIu32 ")\n",
                 status_code);
             break;
 
         case TEST_ERROR:
             state = TEST_ERROR;
-            val_printf(ALWAYS, "Result=Error (Error code=%d)\n",
+            val_printf(ALWAYS, "Result=Error (Error code=%" PRIu32 ")\n",
                 status_code);
             break;
         default:
             state = TEST_FAIL;
-            val_printf(ALWAYS, "Result=Failed (Error Code=%d)\n",
+            val_printf(ALWAYS, "Result=Failed (Error Code=%" PRIu32 ")\n",
                 status_code);
             break;
     }
