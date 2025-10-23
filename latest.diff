@@ -1,94 +1,54 @@
-diff --git a/inc/val_common_peripherals.h b/inc/val_common_peripherals.h
-index 1371846..5743bb5 100644
---- a/inc/val_common_peripherals.h
-+++ b/inc/val_common_peripherals.h
-@@ -10,8 +10,8 @@
- 
- #include "val_common.h"
- 
--uint32_t val_nvm_read(uint32_t offset, void *buffer, size_t size);
--uint32_t val_nvm_write(uint32_t offset, void *buffer, size_t size);
-+uint32_t val_nvm_read(size_t offset, void *buffer, size_t size);
-+uint32_t val_nvm_write(size_t offset, void *buffer, size_t size);
- /*
-  * Watchdog control APIs serialize access internally, ensuring that concurrent enable
-  * or disable requests are handled deterministically.
 diff --git a/src/val_common_peripherals.c b/src/val_common_peripherals.c
-index 696fb11..de40363 100644
+index de40363..e32f585 100644
 --- a/src/val_common_peripherals.c
 +++ b/src/val_common_peripherals.c
-@@ -8,6 +8,8 @@
- #include "val_common_peripherals.h"
- #include <stdatomic.h>
- #include <stdbool.h>
-+#include <stddef.h>
-+#include <stdint.h>
+@@ -34,6 +34,12 @@ static void val_unlock(atomic_flag *lock)
  
- /*
-  * Lightweight spin locks serialize access to PAL peripheral operations. The PAL drivers are
-@@ -30,6 +32,27 @@ static void val_unlock(atomic_flag *lock)
-     atomic_flag_clear_explicit(lock, memory_order_release);
+ static bool val_nvm_range_is_valid(size_t offset, size_t size)
+ {
++#ifdef PLATFORM_NVM_SIZE
++    const size_t nvm_size = (size_t)PLATFORM_NVM_SIZE;
++#else
++    const size_t nvm_size = SIZE_MAX;
++#endif
++
+     if (size > SIZE_MAX - offset) {
+         return false;
+     }
+@@ -50,6 +56,14 @@ static bool val_nvm_range_is_valid(size_t offset, size_t size)
+         return false;
+     }
+ 
++    if (offset > nvm_size) {
++        return false;
++    }
++
++    if (size > (nvm_size - offset)) {
++        return false;
++    }
++
+     return true;
  }
  
-+static bool val_nvm_range_is_valid(size_t offset, size_t size)
-+{
-+    if (size > SIZE_MAX - offset) {
-+        return false;
-+    }
-+
-+    if (offset > (size_t)UINT32_MAX) {
-+        return false;
-+    }
-+
-+    if (size > (size_t)UINT32_MAX) {
-+        return false;
-+    }
-+
-+    if (offset > ((size_t)UINT32_MAX - size)) {
-+        return false;
-+    }
-+
-+    return true;
-+}
-+
- /**
-  *   @brief   -  Reads 'size' bytes from non-volatile memory 'base + offset' into given buffer
-  *   @param   -  offset  : Offset from NV Memory base address
-@@ -37,12 +60,16 @@ static void val_unlock(atomic_flag *lock)
-  *            -  size    : Number of bytes
-  *   @return  -  SUCCESS/FAILURE
- **/
--uint32_t val_nvm_read(uint32_t offset, void *buffer, size_t size)
-+uint32_t val_nvm_read(size_t offset, void *buffer, size_t size)
- {
-       uint32_t status;
+@@ -68,6 +82,10 @@ uint32_t val_nvm_read(size_t offset, void *buffer, size_t size)
+           return VAL_STATUS_INVALID;
+       }
  
-+      if ((buffer == NULL && size != 0U) || !val_nvm_range_is_valid(offset, size)) {
-+          return VAL_STATUS_INVALID;
++      if (size == 0U) {
++          return VAL_SUCCESS;
 +      }
 +
        val_lock(&nvm_lock);
--      status = pal_nvm_read(offset, buffer, size);
-+      status = pal_nvm_read((uint32_t)offset, buffer, size);
+       status = pal_nvm_read((uint32_t)offset, buffer, size);
        val_unlock(&nvm_lock);
+@@ -91,6 +109,10 @@ uint32_t val_nvm_write(size_t offset, void *buffer, size_t size)
+           return VAL_STATUS_INVALID;
+       }
  
-       return status;
-@@ -56,12 +83,16 @@ uint32_t val_nvm_read(uint32_t offset, void *buffer, size_t size)
-  *             -  size    : Number of bytes
-  *    @return  -  SUCCESS/FAILURE
- **/
--uint32_t val_nvm_write(uint32_t offset, void *buffer, size_t size)
-+uint32_t val_nvm_write(size_t offset, void *buffer, size_t size)
- {
-       uint32_t status;
- 
-+      if ((buffer == NULL && size != 0U) || !val_nvm_range_is_valid(offset, size)) {
-+          return VAL_STATUS_INVALID;
++      if (size == 0U) {
++          return VAL_SUCCESS;
 +      }
 +
        val_lock(&nvm_lock);
--      status = pal_nvm_write(offset, buffer, size);
-+      status = pal_nvm_write((uint32_t)offset, buffer, size);
+       status = pal_nvm_write((uint32_t)offset, buffer, size);
        val_unlock(&nvm_lock);
- 
-       return status;

@@ -34,6 +34,12 @@ static void val_unlock(atomic_flag *lock)
 
 static bool val_nvm_range_is_valid(size_t offset, size_t size)
 {
+#ifdef PLATFORM_NVM_SIZE
+    const size_t nvm_size = (size_t)PLATFORM_NVM_SIZE;
+#else
+    const size_t nvm_size = SIZE_MAX;
+#endif
+
     if (size > SIZE_MAX - offset) {
         return false;
     }
@@ -47,6 +53,14 @@ static bool val_nvm_range_is_valid(size_t offset, size_t size)
     }
 
     if (offset > ((size_t)UINT32_MAX - size)) {
+        return false;
+    }
+
+    if (offset > nvm_size) {
+        return false;
+    }
+
+    if (size > (nvm_size - offset)) {
         return false;
     }
 
@@ -66,6 +80,10 @@ uint32_t val_nvm_read(size_t offset, void *buffer, size_t size)
 
       if ((buffer == NULL && size != 0U) || !val_nvm_range_is_valid(offset, size)) {
           return VAL_STATUS_INVALID;
+      }
+
+      if (size == 0U) {
+          return VAL_SUCCESS;
       }
 
       val_lock(&nvm_lock);
@@ -89,6 +107,10 @@ uint32_t val_nvm_write(size_t offset, void *buffer, size_t size)
 
       if ((buffer == NULL && size != 0U) || !val_nvm_range_is_valid(offset, size)) {
           return VAL_STATUS_INVALID;
+      }
+
+      if (size == 0U) {
+          return VAL_SUCCESS;
       }
 
       val_lock(&nvm_lock);
