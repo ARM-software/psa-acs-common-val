@@ -71,6 +71,7 @@ static_assert(sizeof(ptrdiff_t) == sizeof(uint64_t),
  */
 size_t log_buffer_offset;
 char log_buffer[LOG_BUFFER_SIZE];
+static const char null_log_message[] = "(null)";
 
 /**
  *   @brief    - Stores a character in a log buffer and outputs it via 'val_putc'
@@ -650,7 +651,8 @@ out:
 uint32_t val_printf(print_verbosity_t verbosity, const char *msg, ...)
 {
     size_t chars_written = 0;
-    size_t len = log_strnlen_s(msg, LOG_MAX_STRING_LENGTH - 2);
+    const char *format_msg = (msg != NULL) ? msg : null_log_message;
+    size_t len = log_strnlen_s(format_msg, LOG_MAX_STRING_LENGTH - 2);
     static bool lastWasNewline = true;
     char formatted_msg[LOG_MAX_STRING_LENGTH];
     va_list args;
@@ -692,12 +694,12 @@ uint32_t val_printf(print_verbosity_t verbosity, const char *msg, ...)
             }
         }
 
-        const bool has_newline = (len > 0) && (msg[len - 1] == '\n');
+        const bool has_newline = (len > 0) && (format_msg[len - 1] == '\n');
         const bool truncated = (len == LOG_MAX_STRING_LENGTH - 2); /* log_strnlen_s hit the scan limit */
 
         if (has_newline)
         {
-            val_mem_copy(formatted_msg, sizeof(formatted_msg), msg, len - 1);
+            val_mem_copy(formatted_msg, sizeof(formatted_msg), format_msg, len - 1);
             formatted_msg[len - 1] = '\r';
             formatted_msg[len] = '\n';
             formatted_msg[len + 1] = '\0';
@@ -709,13 +711,13 @@ uint32_t val_printf(print_verbosity_t verbosity, const char *msg, ...)
         {
             if (truncated)
             {
-                val_mem_copy(formatted_msg, sizeof(formatted_msg), msg, len);
+                val_mem_copy(formatted_msg, sizeof(formatted_msg), format_msg, len);
                 formatted_msg[len] = '\0';
                 chars_written = val_log(formatted_msg, args);
             }
             else
             {
-                chars_written = val_log(msg, args);
+                chars_written = val_log(format_msg, args);
             }
             lastWasNewline = false;
         }
