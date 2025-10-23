@@ -1,76 +1,17 @@
-diff --git a/inc/val_common_status.h b/inc/val_common_status.h
-index 83b8091..5496ee1 100644
---- a/inc/val_common_status.h
-+++ b/inc/val_common_status.h
-@@ -9,12 +9,11 @@
- #define VAL_COMMON_STATUS_H
- 
- #include "val_common.h"
-+#include <stdatomic.h>
- 
- /* Struture to capture test state */
- typedef struct {
--    uint16_t reserved;
--    uint8_t  state;
--    uint8_t  status_code;
-+    _Atomic uint32_t word;
- } val_test_status_buffer_ts;
- 
- #define TEST_STATUS_OFFSET         0
-diff --git a/src/val_common_status.c b/src/val_common_status.c
-index 10096a5..5730dbf 100644
---- a/src/val_common_status.c
-+++ b/src/val_common_status.c
-@@ -12,6 +12,14 @@
- #include <limits.h>
- 
- static _Atomic void *shared_region_base;
-+static const uint32_t test_status_mask = ((uint32_t)TEST_STATE_MASK << TEST_STATE_SHIFT) |
-+                                         TEST_STATUS_CODE_MASK;
-+
-+static inline val_test_status_buffer_ts *val_status_buffer(void)
-+{
-+    return (val_test_status_buffer_ts *)((uint8_t *)val_get_shared_region_base()
-+                                         + TEST_STATUS_OFFSET);
-+}
- 
- /**
-  *   @brief    Returns the IPA address of the shared region
-@@ -71,12 +79,17 @@ void *val_get_shared_region_base(void)
- **/
- void val_set_status(uint32_t status)
+diff --git a/src/val_common_framework.c b/src/val_common_framework.c
+index eb91cde..fb75efb 100644
+--- a/src/val_common_framework.c
++++ b/src/val_common_framework.c
+@@ -88,6 +88,12 @@ void val_reset_test_info_fields(test_info_t *test_info)
+  */
+ void val_reset_regression_report(regre_report_t *report)
  {
--    uint8_t state = ((status >> TEST_STATE_SHIFT) & TEST_STATE_MASK);
--    val_test_status_buffer_ts *curr_test_status = (val_get_shared_region_base()
--                                                  + TEST_STATUS_OFFSET);
--
--    curr_test_status->state = state;
--    curr_test_status->status_code  = (status & TEST_STATUS_CODE_MASK);
-+    val_test_status_buffer_ts *curr_test_status = val_status_buffer();
-+    uint32_t expected = atomic_load_explicit(&curr_test_status->word, memory_order_relaxed);
-+    uint32_t desired;
++    if (report == NULL)
++    {
++        val_printf(ERROR, "Regression report pointer is NULL\n");
++        return;
++    }
 +
-+    do {
-+        desired = (expected & ~test_status_mask) | (status & test_status_mask);
-+    } while (!atomic_compare_exchange_weak_explicit(&curr_test_status->word,
-+                                                    &expected,
-+                                                    desired,
-+                                                    memory_order_release,
-+                                                    memory_order_relaxed));
- }
- 
- /**
-@@ -86,10 +99,9 @@ void val_set_status(uint32_t status)
- **/
- uint32_t val_get_status(void)
- {
--    val_test_status_buffer_ts *curr_test_status = (val_get_shared_region_base()
--                                                   + TEST_STATUS_OFFSET);
--    return (uint32_t)(((curr_test_status->state) << TEST_STATE_SHIFT) |
--            (curr_test_status->status_code));
-+    val_test_status_buffer_ts *curr_test_status = val_status_buffer();
-+
-+    return atomic_load_explicit(&curr_test_status->word, memory_order_acquire) & test_status_mask;
- }
- 
- /**
+     __atomic_store_n(&report->total_pass, 0U, __ATOMIC_RELAXED);
+     __atomic_store_n(&report->total_fail, 0U, __ATOMIC_RELAXED);
+     __atomic_store_n(&report->total_skip, 0U, __ATOMIC_RELAXED);

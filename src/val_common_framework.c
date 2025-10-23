@@ -88,6 +88,12 @@ void val_reset_test_info_fields(test_info_t *test_info)
  */
 void val_reset_regression_report(regre_report_t *report)
 {
+    if (report == NULL)
+    {
+        val_printf(ERROR, "Regression report pointer is NULL\n");
+        return;
+    }
+
     __atomic_store_n(&report->total_pass, 0U, __ATOMIC_RELAXED);
     __atomic_store_n(&report->total_fail, 0U, __ATOMIC_RELAXED);
     __atomic_store_n(&report->total_skip, 0U, __ATOMIC_RELAXED);
