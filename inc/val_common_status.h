@@ -9,12 +9,11 @@
 #define VAL_COMMON_STATUS_H
 
 #include "val_common.h"
+#include <stdatomic.h>
 
 /* Struture to capture test state */
 typedef struct {
-    uint16_t reserved;
-    uint8_t  state;
-    uint8_t  status_code;
+    _Atomic uint32_t word;
 } val_test_status_buffer_ts;
 
 #define TEST_STATUS_OFFSET         0

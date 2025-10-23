@@ -12,6 +12,14 @@
 #include <limits.h>
 
 static _Atomic void *shared_region_base;
+static const uint32_t test_status_mask = ((uint32_t)TEST_STATE_MASK << TEST_STATE_SHIFT) |
+                                         TEST_STATUS_CODE_MASK;
+
+static inline val_test_status_buffer_ts *val_status_buffer(void)
+{
+    return (val_test_status_buffer_ts *)((uint8_t *)val_get_shared_region_base()
+                                         + TEST_STATUS_OFFSET);
+}
 
 /**
  *   @brief    Returns the IPA address of the shared region
@@ -71,12 +79,17 @@ void *val_get_shared_region_base(void)
 **/
 void val_set_status(uint32_t status)
 {
-    uint8_t state = ((status >> TEST_STATE_SHIFT) & TEST_STATE_MASK);
-    val_test_status_buffer_ts *curr_test_status = (val_get_shared_region_base()
-                                                  + TEST_STATUS_OFFSET);
+    val_test_status_buffer_ts *curr_test_status = val_status_buffer();
+    uint32_t expected = atomic_load_explicit(&curr_test_status->word, memory_order_relaxed);
+    uint32_t desired;
 
-    curr_test_status->state = state;
-    curr_test_status->status_code  = (status & TEST_STATUS_CODE_MASK);
+    do {
+        desired = (expected & ~test_status_mask) | (status & test_status_mask);
+    } while (!atomic_compare_exchange_weak_explicit(&curr_test_status->word,
+                                                    &expected,
+                                                    desired,
+                                                    memory_order_release,
+                                                    memory_order_relaxed));
 }
 
 /**
@@ -86,10 +99,9 @@ void val_set_status(uint32_t status)
 **/
 uint32_t val_get_status(void)
 {
-    val_test_status_buffer_ts *curr_test_status = (val_get_shared_region_base()
-                                                   + TEST_STATUS_OFFSET);
-    return (uint32_t)(((curr_test_status->state) << TEST_STATE_SHIFT) |
-            (curr_test_status->status_code));
+    val_test_status_buffer_ts *curr_test_status = val_status_buffer();
+
+    return atomic_load_explicit(&curr_test_status->word, memory_order_acquire) & test_status_mask;
 }
 
 /**
