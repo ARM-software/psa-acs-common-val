@@ -1,17 +1,53 @@
-diff --git a/src/val_common_framework.c b/src/val_common_framework.c
-index de1c85e..b983da9 100644
---- a/src/val_common_framework.c
-+++ b/src/val_common_framework.c
-@@ -102,6 +102,12 @@ void val_reset_regression_report(regre_report_t *report)
- **/
- void val_log_final_test_status(test_info_t *test_info, regre_report_t *regre_report)
- {
-+    if (regre_report == NULL)
-+    {
-+        val_printf(ERROR, "Regression report pointer is NULL\n");
-+        return;
-+    }
+diff --git a/inc/val_common_log.h b/inc/val_common_log.h
+index 3f1b460..2bb12d4 100644
+--- a/inc/val_common_log.h
++++ b/inc/val_common_log.h
+@@ -20,13 +20,21 @@ typedef enum {
+     ALWAYS  = 9
+ } print_verbosity_t;
+ 
++#if defined(__clang__) || defined(__GNUC__)
++#define VAL_PRINTF_FORMAT(pos_fmt, pos_args) __attribute__((format(printf, pos_fmt, pos_args)))
++#else
++#define VAL_PRINTF_FORMAT(pos_fmt, pos_args)
++#endif
 +
-     uint32_t total_pass  = __atomic_load_n(&regre_report->total_pass, __ATOMIC_RELAXED);
-     uint32_t total_fail  = __atomic_load_n(&regre_report->total_fail, __ATOMIC_RELAXED);
-     uint32_t total_skip  = __atomic_load_n(&regre_report->total_skip, __ATOMIC_RELAXED);
+ /**
+- *   @brief    - This function prints the given string and data onto the uart
++ *   @brief    - This function prints the given format string and data onto the uart
+  *   @param    - verbosity  : Print Verbosity level
+- *   @param    - msg        : Input String
++ *   @param    - fmt        : printf-style format string
+  *   @param    - ...        : ellipses for variadic args
+  *   @return   - SUCCESS((Any positive number for character written)/FAILURE(0))
+ **/
+-uint32_t val_printf(print_verbosity_t verbosity, const char *msg, ...);
++uint32_t val_printf(print_verbosity_t verbosity, const char *fmt, ...) VAL_PRINTF_FORMAT(2, 3);
++
++#undef VAL_PRINTF_FORMAT
+ 
+ #endif /* VAL_COMMON_LOG_H */
+diff --git a/src/val_common_log.c b/src/val_common_log.c
+index 6943f36..72af231 100644
+--- a/src/val_common_log.c
++++ b/src/val_common_log.c
+@@ -663,16 +663,16 @@ out:
+  *             - ...        : ellipses for variadic args
+  *   @return   - SUCCESS((Any positive number for character written)/FAILURE(0)
+  **/
+-uint32_t val_printf(print_verbosity_t verbosity, const char *msg, ...)
++uint32_t val_printf(print_verbosity_t verbosity, const char *fmt, ...)
+ {
+     size_t chars_written = 0;
+-    const char *format_msg = (msg != NULL) ? msg : null_log_message;
++    const char *format_msg = (fmt != NULL) ? fmt : null_log_message;
+     size_t len = log_strnlen_s(format_msg, LOG_MAX_STRING_LENGTH - 2);
+     static bool lastWasNewline = true;
+     char formatted_msg[LOG_MAX_STRING_LENGTH];
+     va_list args;
+ 
+-    va_start(args, msg);
++    va_start(args, fmt);
+ 
+     if (verbosity >= VERBOSITY)
+     {

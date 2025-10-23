@@ -663,16 +663,16 @@ out:
  *             - ...        : ellipses for variadic args
  *   @return   - SUCCESS((Any positive number for character written)/FAILURE(0)
  **/
-uint32_t val_printf(print_verbosity_t verbosity, const char *msg, ...)
+uint32_t val_printf(print_verbosity_t verbosity, const char *fmt, ...)
 {
     size_t chars_written = 0;
-    const char *format_msg = (msg != NULL) ? msg : null_log_message;
+    const char *format_msg = (fmt != NULL) ? fmt : null_log_message;
     size_t len = log_strnlen_s(format_msg, LOG_MAX_STRING_LENGTH - 2);
     static bool lastWasNewline = true;
     char formatted_msg[LOG_MAX_STRING_LENGTH];
     va_list args;
 
-    va_start(args, msg);
+    va_start(args, fmt);
 
     if (verbosity >= VERBOSITY)
     {
