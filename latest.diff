@@ -1,53 +1,94 @@
-diff --git a/inc/val_common_log.h b/inc/val_common_log.h
-index 3f1b460..2bb12d4 100644
---- a/inc/val_common_log.h
-+++ b/inc/val_common_log.h
-@@ -20,13 +20,21 @@ typedef enum {
-     ALWAYS  = 9
- } print_verbosity_t;
+diff --git a/inc/val_common_peripherals.h b/inc/val_common_peripherals.h
+index 1371846..5743bb5 100644
+--- a/inc/val_common_peripherals.h
++++ b/inc/val_common_peripherals.h
+@@ -10,8 +10,8 @@
  
-+#if defined(__clang__) || defined(__GNUC__)
-+#define VAL_PRINTF_FORMAT(pos_fmt, pos_args) __attribute__((format(printf, pos_fmt, pos_args)))
-+#else
-+#define VAL_PRINTF_FORMAT(pos_fmt, pos_args)
-+#endif
+ #include "val_common.h"
+ 
+-uint32_t val_nvm_read(uint32_t offset, void *buffer, size_t size);
+-uint32_t val_nvm_write(uint32_t offset, void *buffer, size_t size);
++uint32_t val_nvm_read(size_t offset, void *buffer, size_t size);
++uint32_t val_nvm_write(size_t offset, void *buffer, size_t size);
+ /*
+  * Watchdog control APIs serialize access internally, ensuring that concurrent enable
+  * or disable requests are handled deterministically.
+diff --git a/src/val_common_peripherals.c b/src/val_common_peripherals.c
+index 696fb11..de40363 100644
+--- a/src/val_common_peripherals.c
++++ b/src/val_common_peripherals.c
+@@ -8,6 +8,8 @@
+ #include "val_common_peripherals.h"
+ #include <stdatomic.h>
+ #include <stdbool.h>
++#include <stddef.h>
++#include <stdint.h>
+ 
+ /*
+  * Lightweight spin locks serialize access to PAL peripheral operations. The PAL drivers are
+@@ -30,6 +32,27 @@ static void val_unlock(atomic_flag *lock)
+     atomic_flag_clear_explicit(lock, memory_order_release);
+ }
+ 
++static bool val_nvm_range_is_valid(size_t offset, size_t size)
++{
++    if (size > SIZE_MAX - offset) {
++        return false;
++    }
++
++    if (offset > (size_t)UINT32_MAX) {
++        return false;
++    }
++
++    if (size > (size_t)UINT32_MAX) {
++        return false;
++    }
++
++    if (offset > ((size_t)UINT32_MAX - size)) {
++        return false;
++    }
++
++    return true;
++}
 +
  /**
-- *   @brief    - This function prints the given string and data onto the uart
-+ *   @brief    - This function prints the given format string and data onto the uart
-  *   @param    - verbosity  : Print Verbosity level
-- *   @param    - msg        : Input String
-+ *   @param    - fmt        : printf-style format string
-  *   @param    - ...        : ellipses for variadic args
-  *   @return   - SUCCESS((Any positive number for character written)/FAILURE(0))
+  *   @brief   -  Reads 'size' bytes from non-volatile memory 'base + offset' into given buffer
+  *   @param   -  offset  : Offset from NV Memory base address
+@@ -37,12 +60,16 @@ static void val_unlock(atomic_flag *lock)
+  *            -  size    : Number of bytes
+  *   @return  -  SUCCESS/FAILURE
  **/
--uint32_t val_printf(print_verbosity_t verbosity, const char *msg, ...);
-+uint32_t val_printf(print_verbosity_t verbosity, const char *fmt, ...) VAL_PRINTF_FORMAT(2, 3);
-+
-+#undef VAL_PRINTF_FORMAT
- 
- #endif /* VAL_COMMON_LOG_H */
-diff --git a/src/val_common_log.c b/src/val_common_log.c
-index 6943f36..72af231 100644
---- a/src/val_common_log.c
-+++ b/src/val_common_log.c
-@@ -663,16 +663,16 @@ out:
-  *             - ...        : ellipses for variadic args
-  *   @return   - SUCCESS((Any positive number for character written)/FAILURE(0)
-  **/
--uint32_t val_printf(print_verbosity_t verbosity, const char *msg, ...)
-+uint32_t val_printf(print_verbosity_t verbosity, const char *fmt, ...)
+-uint32_t val_nvm_read(uint32_t offset, void *buffer, size_t size)
++uint32_t val_nvm_read(size_t offset, void *buffer, size_t size)
  {
-     size_t chars_written = 0;
--    const char *format_msg = (msg != NULL) ? msg : null_log_message;
-+    const char *format_msg = (fmt != NULL) ? fmt : null_log_message;
-     size_t len = log_strnlen_s(format_msg, LOG_MAX_STRING_LENGTH - 2);
-     static bool lastWasNewline = true;
-     char formatted_msg[LOG_MAX_STRING_LENGTH];
-     va_list args;
+       uint32_t status;
  
--    va_start(args, msg);
-+    va_start(args, fmt);
++      if ((buffer == NULL && size != 0U) || !val_nvm_range_is_valid(offset, size)) {
++          return VAL_STATUS_INVALID;
++      }
++
+       val_lock(&nvm_lock);
+-      status = pal_nvm_read(offset, buffer, size);
++      status = pal_nvm_read((uint32_t)offset, buffer, size);
+       val_unlock(&nvm_lock);
  
-     if (verbosity >= VERBOSITY)
-     {
+       return status;
+@@ -56,12 +83,16 @@ uint32_t val_nvm_read(uint32_t offset, void *buffer, size_t size)
+  *             -  size    : Number of bytes
+  *    @return  -  SUCCESS/FAILURE
+ **/
+-uint32_t val_nvm_write(uint32_t offset, void *buffer, size_t size)
++uint32_t val_nvm_write(size_t offset, void *buffer, size_t size)
+ {
+       uint32_t status;
+ 
++      if ((buffer == NULL && size != 0U) || !val_nvm_range_is_valid(offset, size)) {
++          return VAL_STATUS_INVALID;
++      }
++
+       val_lock(&nvm_lock);
+-      status = pal_nvm_write(offset, buffer, size);
++      status = pal_nvm_write((uint32_t)offset, buffer, size);
+       val_unlock(&nvm_lock);
+ 
+       return status;
