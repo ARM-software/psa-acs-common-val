@@ -5,6 +5,8 @@
  *
  */
 
+#include <limits.h>
+
 #include "val_common_log.h"
 #include "val_common_framework.h"
 
@@ -338,18 +340,31 @@ static const char *parse_min_width(const char *fmt, va_list args,
                    struct format_flags *flags, int *min_width)
 {
     int width = 0;
+    const int max_tens = INT_MAX / 10;
+    const int max_units = INT_MAX % 10;
 
     /* Read minimum width from arguments. */
     if (*fmt == '*') {
         fmt++;
-        width = va_arg(args, int);
-        if (width < 0) {
-            width = -width;
+        int arg_width = va_arg(args, int);
+        if (arg_width < 0) {
             flags->minus = true;
+            if (arg_width == INT_MIN) {
+                width = INT_MAX;
+            } else {
+                width = -arg_width;
+            }
+        } else {
+            width = arg_width;
         }
     } else {
         for (; *fmt >= '0' && *fmt <= '9'; fmt++) {
-            width = (width * 10) + (*fmt - '0');
+            int digit = *fmt - '0';
+            if (width > max_tens || (width == max_tens && digit > max_units)) {
+                width = INT_MAX;
+            } else {
+                width = (width * 10) + digit;
+            }
         }
     }
 
