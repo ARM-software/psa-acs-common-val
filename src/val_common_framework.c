@@ -5,6 +5,8 @@
  *
  */
 
+#include <string.h>
+
 #include "val_common_framework.h"
 #include "val_common_log.h"
 #include "val_common_status.h"
@@ -246,15 +248,5 @@ void val_mem_copy(char *dest, size_t dest_size, const char *src, size_t len)
     if (copy_len == 0 || dest == src)
         return;
 
-    /* Copy backwards if ranges overlap such that forward copy corrupts data */
-    if (dest > src && dest < (src + copy_len))
-    {
-        for (size_t i = copy_len; i > 0; --i)
-            dest[i - 1] = src[i - 1];
-    }
-    else
-    {
-        for (size_t i = 0; i < copy_len; ++i)
-            dest[i] = src[i];
-    }
+    memmove(dest, src, copy_len);
 }
