@@ -21,10 +21,10 @@
 #define  VAL_STATUS_ERROR_MAX   255
 #define  VAL_INVALID_TEST_NUM   0xFFFFFFFF
 
-#define VAL_BIT_MASK(len) ((1 << len) - 1)
+#define VAL_BIT_MASK(len) ((uint32_t)(((uint32_t)1U << (len)) - 1U))
 /* Set the value in given position */
-#define VAL_SET_BITS(data, pos, len, val) (((uint32_t)(~(uint32_t)0 & ~(uint32_t) \
-                    (VAL_BIT_MASK(len) << pos)) & data) | (val << pos))
+#define VAL_SET_BITS(data, pos, len, val) (((uint32_t)((~(uint32_t)0) & ~(uint32_t) \
+                    (VAL_BIT_MASK(len) << (pos))) & (uint32_t)(data)) | ((uint32_t)(val) << (pos)))
 
 
 /* Test state macros */
