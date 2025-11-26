@@ -1,37 +1,151 @@
-diff --git a/src/val_common_status.c b/src/val_common_status.c
-index 3fe0031..6caf304 100644
---- a/src/val_common_status.c
-+++ b/src/val_common_status.c
+diff --git a/src/val_common_framework.c b/src/val_common_framework.c
+index de09f79..15cf89d 100644
+--- a/src/val_common_framework.c
++++ b/src/val_common_framework.c
 @@ -5,6 +5,8 @@
   *
   */
  
-+#include <stdint.h>
++#include <inttypes.h>
++#include <stdbool.h>
+ #include <stddef.h>
+ 
+ #include "val_common_framework.h"
+@@ -13,6 +15,18 @@
+ 
+ extern const uint32_t total_tests;
+ 
++static bool val_validate_pointer(const void *ptr,
++                                 const char *param_name,
++                                 const char *func_name)
++{
++    if (ptr != NULL) {
++        return true;
++    }
 +
- #include "val_common_status.h"
- #include "val_common_log.h"
- 
-@@ -52,8 +54,9 @@ void *val_get_shared_region_base(void)
- void val_set_status(uint32_t status)
- {
-     uint8_t state = ((status >> TEST_STATE_SHIFT) & TEST_STATE_MASK);
--    uint8_t *base = (uint8_t *)val_get_shared_region_base();
--    val_test_status_buffer_ts *curr_test_status = (val_test_status_buffer_ts *)(base + TEST_STATUS_OFFSET);
-+    uintptr_t base_addr = (uintptr_t)val_get_shared_region_base();
-+    val_test_status_buffer_ts *curr_test_status =
-+        (val_test_status_buffer_ts *)(base_addr + TEST_STATUS_OFFSET);
- 
-     curr_test_status->state = state;
-     curr_test_status->status_code  = (status & TEST_STATUS_CODE_MASK);
-@@ -66,8 +69,9 @@ void val_set_status(uint32_t status)
++    val_printf(ERROR, "%s: %s is NULL\n", func_name, param_name);
++    return false;
++}
++
+ /**
+  *   @brief   -  Logs the test_info details
+  *   @param   -  test_info : Test information struct address
+@@ -20,8 +34,7 @@ extern const uint32_t total_tests;
  **/
- uint32_t val_get_status(void)
+ void val_log_test_info(test_info_t *test_info)
  {
--    uint8_t *base = (uint8_t *)val_get_shared_region_base();
--    val_test_status_buffer_ts *curr_test_status = (val_test_status_buffer_ts *)(base + TEST_STATUS_OFFSET);
-+    uintptr_t base_addr = (uintptr_t)val_get_shared_region_base();
-+    val_test_status_buffer_ts *curr_test_status =
-+        (val_test_status_buffer_ts *)(base_addr + TEST_STATUS_OFFSET);
-     return (uint32_t)(((curr_test_status->state) << TEST_STATE_SHIFT) |
-             (curr_test_status->status_code));
- }
+-    if (test_info == NULL) {
+-        val_printf(ERROR, "val_log_test_info: test_info is NULL\n");
++    if (!val_validate_pointer(test_info, "test_info", __func__)) {
+         return;
+     }
+ 
+@@ -43,7 +56,7 @@ uint32_t is_reboot_run(uint32_t test_progress, const uint8_t *pattern, uint32_t
+ 
+     if (pattern == NULL) {
+         if (length != 0) {
+-            val_printf(ERROR, "is_reboot_run: pattern is NULL\n");
++            val_validate_pointer(pattern, "pattern", __func__);
+         }
+         return 0;
+     }
+@@ -63,8 +76,7 @@ uint32_t is_reboot_run(uint32_t test_progress, const uint8_t *pattern, uint32_t
+ **/
+ void val_reset_test_info_fields(test_info_t *test_info)
+ {
+-    if (test_info == NULL) {
+-        val_printf(ERROR, "val_reset_test_info_fields: test_info is NULL\n");
++    if (!val_validate_pointer(test_info, "test_info", __func__)) {
+         return;
+     }
+ 
+@@ -81,8 +93,7 @@ void val_reset_test_info_fields(test_info_t *test_info)
+  */
+ void val_reset_regression_report(regre_report_t *report)
+ {
+-    if (report == NULL) {
+-        val_printf(ERROR, "val_reset_regression_report: report is NULL\n");
++    if (!val_validate_pointer(report, "report", __func__)) {
+         return;
+     }
+ 
+@@ -100,13 +111,11 @@ void val_reset_regression_report(regre_report_t *report)
+ **/
+ void val_log_final_test_status(test_info_t *test_info, regre_report_t *regre_report)
+ {
+-    if (test_info == NULL) {
+-        val_printf(ERROR, "val_log_final_test_status: test_info is NULL\n");
++    if (!val_validate_pointer(test_info, "test_info", __func__)) {
+         return;
+     }
+ 
+-    if (regre_report == NULL) {
+-        val_printf(ERROR, "val_log_final_test_status: regre_report is NULL\n");
++    if (!val_validate_pointer(regre_report, "regre_report", __func__)) {
+         return;
+     }
+ 
+@@ -126,8 +135,11 @@ void val_log_final_test_status(test_info_t *test_info, regre_report_t *regre_rep
+  */
+ void val_sort_indices(uint32_t *a, uint32_t *b)
+ {
+-    if ((a == NULL) || (b == NULL)) {
+-        val_printf(ERROR, "val_sort_indices: index pointer is NULL\n");
++    if (!val_validate_pointer(a, "a", __func__)) {
++        return;
++    }
++
++    if (!val_validate_pointer(b, "b", __func__)) {
+         return;
+     }
+ 
+@@ -166,8 +178,7 @@ void val_handle_reboot_result(uint32_t test_progress)
+  */
+ void val_update_regression_report(uint32_t test_result, regre_report_t *regre_report)
+ {
+-    if (regre_report == NULL) {
+-        val_printf(ERROR, "val_update_regression_report: regre_report is NULL\n");
++    if (!val_validate_pointer(regre_report, "regre_report", __func__)) {
+         return;
+     }
+ 
+@@ -195,19 +206,18 @@ void val_update_regression_report(uint32_t test_result, regre_report_t *regre_re
+  */
+ void val_print_regression_report(regre_report_t *regre_report)
+ {
+-    if (regre_report == NULL) {
+-        val_printf(ERROR, "val_print_regression_report: regre_report is NULL\n");
++    if (!val_validate_pointer(regre_report, "regre_report", __func__)) {
+         return;
+     }
+ 
+     val_printf(ALWAYS, "\n\n");
+     val_printf(ALWAYS, "REGRESSION REPORT: \n");
+     val_printf(ALWAYS, "==========================\n");
+-    val_printf(ALWAYS, "   TOTAL TESTS     : %u\n",
+-        (uint32_t)(regre_report->total_pass +
+-                   regre_report->total_fail +
+-                   regre_report->total_skip +
+-                   regre_report->total_error), 0);
++    uint32_t total_tests_run = (uint32_t)(regre_report->total_pass +
++                                          regre_report->total_fail +
++                                          regre_report->total_skip +
++                                          regre_report->total_error);
++    val_printf(ALWAYS, "   TOTAL TESTS     : %" PRIu32 "\n", total_tests_run);
+     val_printf(ALWAYS, "   TOTAL PASSED    : %u\n", regre_report->total_pass);
+     val_printf(ALWAYS, "   TOTAL FAILED    : %u\n", regre_report->total_fail);
+     val_printf(ALWAYS, "   TOTAL SKIPPED   : %u\n", regre_report->total_skip);
+@@ -230,8 +240,11 @@ void val_mem_copy(char *dest, const char *src, size_t len)
+         return;
+     }
+ 
+-    if ((dest == NULL) || (src == NULL)) {
+-        val_printf(ERROR, "val_mem_copy: source or destination is NULL\n");
++    if (!val_validate_pointer(dest, "dest", __func__)) {
++        return;
++    }
++
++    if (!val_validate_pointer(src, "src", __func__)) {
+         return;
+     }
+ 
