@@ -23,7 +23,10 @@ static bool val_validate_pointer(const void *ptr,
         return true;
     }
 
-    val_printf(ERROR, "%s: %s is NULL\n", func_name, param_name);
+    const char *safe_func = (func_name != NULL) ? func_name : "unknown_func";
+    const char *safe_param = (param_name != NULL) ? param_name : "unknown_param";
+
+    val_printf(ERROR, "%s: %s is NULL\n", safe_func, safe_param);
     return false;
 }
 
