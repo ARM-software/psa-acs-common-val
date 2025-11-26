@@ -5,6 +5,8 @@
  *
  */
 
+#include <stddef.h>
+
 #include "val_common_framework.h"
 #include "val_common_log.h"
 #include "val_common_status.h"
@@ -18,6 +20,11 @@ extern const uint32_t total_tests;
 **/
 void val_log_test_info(test_info_t *test_info)
 {
+    if (test_info == NULL) {
+        val_printf(ERROR, "val_log_test_info: test_info is NULL\n");
+        return;
+    }
+
     val_printf(INFO, "In val_get_last_run_test_info, test_num=%x\n", test_info->test_num);
     val_printf(INFO, "suite_num=%x\n", test_info->suite_num);
     val_printf(INFO, "test_progress=%x\n", test_info->test_progress);
@@ -33,6 +40,14 @@ void val_log_test_info(test_info_t *test_info)
 uint32_t is_reboot_run(uint32_t test_progress, const uint8_t *pattern, uint32_t length)
 {
     uint32_t i;
+
+    if (pattern == NULL) {
+        if (length != 0) {
+            val_printf(ERROR, "is_reboot_run: pattern is NULL\n");
+        }
+        return 0;
+    }
+
     for (i = 0; i < length; i++)
     {
         if (test_progress == pattern[i])
@@ -48,6 +63,11 @@ uint32_t is_reboot_run(uint32_t test_progress, const uint8_t *pattern, uint32_t 
 **/
 void val_reset_test_info_fields(test_info_t *test_info)
 {
+    if (test_info == NULL) {
+        val_printf(ERROR, "val_reset_test_info_fields: test_info is NULL\n");
+        return;
+    }
+
     test_info->test_num      = VAL_INVALID_TEST_NUM;
     test_info->end_test_num  = total_tests;
     test_info->suite_num     = 0;
@@ -61,6 +81,11 @@ void val_reset_test_info_fields(test_info_t *test_info)
  */
 void val_reset_regression_report(regre_report_t *report)
 {
+    if (report == NULL) {
+        val_printf(ERROR, "val_reset_regression_report: report is NULL\n");
+        return;
+    }
+
     report->total_pass  = 0;
     report->total_fail  = 0;
     report->total_skip  = 0;
@@ -75,6 +100,16 @@ void val_reset_regression_report(regre_report_t *report)
 **/
 void val_log_final_test_status(test_info_t *test_info, regre_report_t *regre_report)
 {
+    if (test_info == NULL) {
+        val_printf(ERROR, "val_log_final_test_status: test_info is NULL\n");
+        return;
+    }
+
+    if (regre_report == NULL) {
+        val_printf(ERROR, "val_log_final_test_status: regre_report is NULL\n");
+        return;
+    }
+
     val_printf(INFO, "In val_get_last_run_test_num, test_num=%x\n", test_info->test_num);
     val_printf(INFO, "suite_num=%x\n", test_info->suite_num);
     val_printf(INFO, "regre_report.total_pass=%x\n", regre_report->total_pass);
@@ -91,6 +126,11 @@ void val_log_final_test_status(test_info_t *test_info, regre_report_t *regre_rep
  */
 void val_sort_indices(uint32_t *a, uint32_t *b)
 {
+    if ((a == NULL) || (b == NULL)) {
+        val_printf(ERROR, "val_sort_indices: index pointer is NULL\n");
+        return;
+    }
+
     if (*a > *b)
     {
         uint32_t temp = *a;
@@ -126,6 +166,11 @@ void val_handle_reboot_result(uint32_t test_progress)
  */
 void val_update_regression_report(uint32_t test_result, regre_report_t *regre_report)
 {
+    if (regre_report == NULL) {
+        val_printf(ERROR, "val_update_regression_report: regre_report is NULL\n");
+        return;
+    }
+
     switch (test_result)
     {
         case TEST_PASS:
@@ -150,6 +195,11 @@ void val_update_regression_report(uint32_t test_result, regre_report_t *regre_re
  */
 void val_print_regression_report(regre_report_t *regre_report)
 {
+    if (regre_report == NULL) {
+        val_printf(ERROR, "val_print_regression_report: regre_report is NULL\n");
+        return;
+    }
+
     val_printf(ALWAYS, "\n\n");
     val_printf(ALWAYS, "REGRESSION REPORT: \n");
     val_printf(ALWAYS, "==========================\n");
@@ -176,6 +226,15 @@ void val_print_regression_report(regre_report_t *regre_report)
  */
 void val_mem_copy(char *dest, const char *src, size_t len)
 {
+    if (len == 0) {
+        return;
+    }
+
+    if ((dest == NULL) || (src == NULL)) {
+        val_printf(ERROR, "val_mem_copy: source or destination is NULL\n");
+        return;
+    }
+
     for (size_t i = 0; i < len; ++i)
         dest[i] = src[i];
 }
