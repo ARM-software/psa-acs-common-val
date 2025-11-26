@@ -5,6 +5,8 @@
  *
  */
 
+#include <stdint.h>
+
 #include "val_common_status.h"
 #include "val_common_log.h"
 
@@ -52,8 +54,9 @@ void *val_get_shared_region_base(void)
 void val_set_status(uint32_t status)
 {
     uint8_t state = ((status >> TEST_STATE_SHIFT) & TEST_STATE_MASK);
-    uint8_t *base = (uint8_t *)val_get_shared_region_base();
-    val_test_status_buffer_ts *curr_test_status = (val_test_status_buffer_ts *)(base + TEST_STATUS_OFFSET);
+    uintptr_t base_addr = (uintptr_t)val_get_shared_region_base();
+    val_test_status_buffer_ts *curr_test_status =
+        (val_test_status_buffer_ts *)(base_addr + TEST_STATUS_OFFSET);
 
     curr_test_status->state = state;
     curr_test_status->status_code  = (status & TEST_STATUS_CODE_MASK);
@@ -66,8 +69,9 @@ void val_set_status(uint32_t status)
 **/
 uint32_t val_get_status(void)
 {
-    uint8_t *base = (uint8_t *)val_get_shared_region_base();
-    val_test_status_buffer_ts *curr_test_status = (val_test_status_buffer_ts *)(base + TEST_STATUS_OFFSET);
+    uintptr_t base_addr = (uintptr_t)val_get_shared_region_base();
+    val_test_status_buffer_ts *curr_test_status =
+        (val_test_status_buffer_ts *)(base_addr + TEST_STATUS_OFFSET);
     return (uint32_t)(((curr_test_status->state) << TEST_STATE_SHIFT) |
             (curr_test_status->status_code));
 }
