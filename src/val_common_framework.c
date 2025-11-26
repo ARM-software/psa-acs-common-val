@@ -5,6 +5,8 @@
  *
  */
 
+#include <inttypes.h>
+
 #include "val_common_framework.h"
 #include "val_common_log.h"
 #include "val_common_status.h"
@@ -153,15 +155,15 @@ void val_print_regression_report(regre_report_t *regre_report)
     val_printf(ALWAYS, "\n\n");
     val_printf(ALWAYS, "REGRESSION REPORT: \n");
     val_printf(ALWAYS, "==========================\n");
-    val_printf(ALWAYS, "   TOTAL TESTS     : %d\n",
-        (uint32_t)(regre_report->total_pass +
-                   regre_report->total_fail +
-                   regre_report->total_skip +
-                   regre_report->total_error), 0);
-    val_printf(ALWAYS, "   TOTAL PASSED    : %d\n", regre_report->total_pass);
-    val_printf(ALWAYS, "   TOTAL FAILED    : %d\n", regre_report->total_fail);
-    val_printf(ALWAYS, "   TOTAL SKIPPED   : %d\n", regre_report->total_skip);
-    val_printf(ALWAYS, "   TOTAL SIM ERROR : %d\n", regre_report->total_error);
+    uint32_t total_tests_run = regre_report->total_pass +
+                               regre_report->total_fail +
+                               regre_report->total_skip +
+                               regre_report->total_error;
+    val_printf(ALWAYS, "   TOTAL TESTS     : %" PRIu32 "\n", total_tests_run);
+    val_printf(ALWAYS, "   TOTAL PASSED    : %" PRIu32 "\n", regre_report->total_pass);
+    val_printf(ALWAYS, "   TOTAL FAILED    : %" PRIu32 "\n", regre_report->total_fail);
+    val_printf(ALWAYS, "   TOTAL SKIPPED   : %" PRIu32 "\n", regre_report->total_skip);
+    val_printf(ALWAYS, "   TOTAL SIM ERROR : %" PRIu32 "\n", regre_report->total_error);
     val_printf(ALWAYS, "==========================\n");
     val_printf(ALWAYS, "******* END OF ACS *******\n");
     val_printf(ALWAYS, "\n");
