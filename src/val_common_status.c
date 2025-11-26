@@ -52,7 +52,7 @@ void *val_get_shared_region_base(void)
 void val_set_status(uint32_t status)
 {
     uint8_t state = ((status >> TEST_STATE_SHIFT) & TEST_STATE_MASK);
-    uint8_t *status_base = (uint8_t *)val_get_shared_region_base();
+    uintptr_t status_base = (uintptr_t)val_get_shared_region_base();
     val_test_status_buffer_ts *curr_test_status =
         (val_test_status_buffer_ts *)(status_base + TEST_STATUS_OFFSET);
 
@@ -67,7 +67,7 @@ void val_set_status(uint32_t status)
 **/
 uint32_t val_get_status(void)
 {
-    uint8_t *status_base = (uint8_t *)val_get_shared_region_base();
+    uintptr_t status_base = (uintptr_t)val_get_shared_region_base();
     val_test_status_buffer_ts *curr_test_status =
         (val_test_status_buffer_ts *)(status_base + TEST_STATUS_OFFSET);
     return (uint32_t)(((curr_test_status->state) << TEST_STATE_SHIFT) |
