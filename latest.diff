@@ -1,25 +1,26 @@
-diff --git a/src/val_common_framework.c b/src/val_common_framework.c
-index 2112456..de09f79 100644
---- a/src/val_common_framework.c
-+++ b/src/val_common_framework.c
-@@ -203,15 +203,15 @@ void val_print_regression_report(regre_report_t *regre_report)
-     val_printf(ALWAYS, "\n\n");
-     val_printf(ALWAYS, "REGRESSION REPORT: \n");
-     val_printf(ALWAYS, "==========================\n");
--    val_printf(ALWAYS, "   TOTAL TESTS     : %d\n",
-+    val_printf(ALWAYS, "   TOTAL TESTS     : %u\n",
-         (uint32_t)(regre_report->total_pass +
-                    regre_report->total_fail +
-                    regre_report->total_skip +
-                    regre_report->total_error), 0);
--    val_printf(ALWAYS, "   TOTAL PASSED    : %d\n", regre_report->total_pass);
--    val_printf(ALWAYS, "   TOTAL FAILED    : %d\n", regre_report->total_fail);
--    val_printf(ALWAYS, "   TOTAL SKIPPED   : %d\n", regre_report->total_skip);
--    val_printf(ALWAYS, "   TOTAL SIM ERROR : %d\n", regre_report->total_error);
-+    val_printf(ALWAYS, "   TOTAL PASSED    : %u\n", regre_report->total_pass);
-+    val_printf(ALWAYS, "   TOTAL FAILED    : %u\n", regre_report->total_fail);
-+    val_printf(ALWAYS, "   TOTAL SKIPPED   : %u\n", regre_report->total_skip);
-+    val_printf(ALWAYS, "   TOTAL SIM ERROR : %u\n", regre_report->total_error);
-     val_printf(ALWAYS, "==========================\n");
-     val_printf(ALWAYS, "******* END OF ACS *******\n");
-     val_printf(ALWAYS, "\n");
+diff --git a/src/val_common_status.c b/src/val_common_status.c
+index 2a8c4ca..3fe0031 100644
+--- a/src/val_common_status.c
++++ b/src/val_common_status.c
+@@ -52,8 +52,8 @@ void *val_get_shared_region_base(void)
+ void val_set_status(uint32_t status)
+ {
+     uint8_t state = ((status >> TEST_STATE_SHIFT) & TEST_STATE_MASK);
+-    val_test_status_buffer_ts *curr_test_status = (val_get_shared_region_base()
+-                                                  + TEST_STATUS_OFFSET);
++    uint8_t *base = (uint8_t *)val_get_shared_region_base();
++    val_test_status_buffer_ts *curr_test_status = (val_test_status_buffer_ts *)(base + TEST_STATUS_OFFSET);
+ 
+     curr_test_status->state = state;
+     curr_test_status->status_code  = (status & TEST_STATUS_CODE_MASK);
+@@ -66,8 +66,8 @@ void val_set_status(uint32_t status)
+ **/
+ uint32_t val_get_status(void)
+ {
+-    val_test_status_buffer_ts *curr_test_status = (val_get_shared_region_base()
+-                                                   + TEST_STATUS_OFFSET);
++    uint8_t *base = (uint8_t *)val_get_shared_region_base();
++    val_test_status_buffer_ts *curr_test_status = (val_test_status_buffer_ts *)(base + TEST_STATUS_OFFSET);
+     return (uint32_t)(((curr_test_status->state) << TEST_STATE_SHIFT) |
+             (curr_test_status->status_code));
+ }
