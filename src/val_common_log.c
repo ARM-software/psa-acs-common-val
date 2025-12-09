@@ -588,6 +588,11 @@ out:
 uint32_t val_printf(print_verbosity_t verbosity, const char *msg, ...)
 {
     size_t chars_written = 0;
+    static const char null_msg[] = "<NULL>";
+    if (msg == NULL) {
+        msg = null_msg;
+    }
+
     size_t len = log_strnlen_s(msg, LOG_MAX_STRING_LENGTH - 2);
     static bool lastWasNewline = true;
     char formatted_msg[LOG_MAX_STRING_LENGTH];
