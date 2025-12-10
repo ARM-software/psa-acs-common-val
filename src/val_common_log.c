@@ -589,12 +589,13 @@ uint32_t val_printf(print_verbosity_t verbosity, const char *msg, ...)
 {
     size_t chars_written = 0;
     static const char null_msg[] = "<NULL>";
+    const char *format = msg;
 
-    if (msg == NULL) {
-        msg = null_msg;
+    if (format == NULL) {
+        format = null_msg;
     }
 
-    size_t len = log_strnlen_s(msg, LOG_MAX_STRING_LENGTH - 2);
+    size_t len = log_strnlen_s(format, LOG_MAX_STRING_LENGTH - 2);
     static bool lastWasNewline = true;
     char formatted_msg[LOG_MAX_STRING_LENGTH];
     va_list args;
@@ -636,9 +637,9 @@ uint32_t val_printf(print_verbosity_t verbosity, const char *msg, ...)
             }
         }
 
-        if (len > 0 && msg[len - 1] == '\n')
+        if (len > 0 && format[len - 1] == '\n')
         {
-            val_mem_copy(formatted_msg, msg, len - 1);
+            val_mem_copy(formatted_msg, format, len - 1);
             formatted_msg[len - 1] = '\r';
             formatted_msg[len] = '\n';
             formatted_msg[len + 1] = '\0';
@@ -648,7 +649,7 @@ uint32_t val_printf(print_verbosity_t verbosity, const char *msg, ...)
         }
         else
         {
-            chars_written = val_log(msg, args);
+            chars_written = val_log(format, args);
             lastWasNewline = false;
         }
     }
