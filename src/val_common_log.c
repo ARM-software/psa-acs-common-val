@@ -464,7 +464,8 @@ static size_t val_log(const char *fmt, va_list args)
             }
 
             case 's': {
-                char *str = va_arg(args, char *);
+                char *arg = va_arg(args, char *);
+                const char *str = arg ? arg : "(null)";
 
                 fmt++;
                 chars_written += print_string(
