@@ -632,7 +632,7 @@ uint32_t val_printf(print_verbosity_t verbosity, const char *msg, ...)
 
         if (len > 0 && msg[len - 1] == '\n')
         {
-            val_mem_copy(formatted_msg, msg, len - 1);
+            val_mem_copy(formatted_msg, sizeof(formatted_msg), msg, len - 1);
             formatted_msg[len - 1] = '\r';
             formatted_msg[len] = '\n';
             formatted_msg[len + 1] = '\0';
