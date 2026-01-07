@@ -5,6 +5,8 @@
  *
  */
 
+#include <limits.h>
+
 #include "val_common_status.h"
 #include "val_common_log.h"
 
@@ -17,8 +19,21 @@ static uint64_t width;
 **/
 uint8_t *val_base_addr_ipa(uint64_t ipa_width)
 {
+    const uint64_t ptr_bit_width = (uint64_t)(sizeof(uintptr_t) * CHAR_BIT);
+    const uint64_t max_supported_width =
+        (ptr_bit_width < 64ull) ? ptr_bit_width : 64ull;
+
+    if ((ipa_width == 0ull) || (ipa_width > max_supported_width)) {
+        val_printf(ERROR,
+            "Invalid IPA width (%llu). Using shared region base PA.\n",
+            (unsigned long long)ipa_width);
+        width = 0;
+        return val_get_shared_region_base_pa();
+    }
+
     width = ipa_width;
-    uintptr_t ipa_addr = (uintptr_t)(VAL_NS_SHARED_REGION_IPA_OFFSET | (1ull << (width - 1)));
+    uintptr_t ipa_addr = (uintptr_t)(VAL_NS_SHARED_REGION_IPA_OFFSET |
+                        (1ull << (width - 1ull)));
     return (uint8_t *)ipa_addr;
 }
 
