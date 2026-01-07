@@ -15,10 +15,11 @@ static uint64_t width;
  *   @param    ipa_width      - Realm IPA width
  *   @return   IPA address of the shared region
 **/
-void *val_base_addr_ipa(uint64_t ipa_width)
+uint8_t *val_base_addr_ipa(uint64_t ipa_width)
 {
     width = ipa_width;
-    return ((void *)(uintptr_t)(VAL_NS_SHARED_REGION_IPA_OFFSET | (1ull << (width - 1))));
+    uintptr_t ipa_addr = (uintptr_t)(VAL_NS_SHARED_REGION_IPA_OFFSET | (1ull << (width - 1)));
+    return (uint8_t *)ipa_addr;
 }
 
 /**
@@ -26,9 +27,9 @@ void *val_base_addr_ipa(uint64_t ipa_width)
  *   @param    Void
  *   @return   Physical address of the shared region
 **/
-void *val_get_shared_region_base_pa(void)
+uint8_t *val_get_shared_region_base_pa(void)
 {
-    return ((void *)(PLATFORM_SHARED_REGION_BASE));
+    return (uint8_t *)(uintptr_t)(PLATFORM_SHARED_REGION_BASE);
 }
 
 /**
@@ -36,7 +37,7 @@ void *val_get_shared_region_base_pa(void)
  *   @param    Void
  *   @return   Base address of the shared region
 **/
-void *val_get_shared_region_base(void)
+uint8_t *val_get_shared_region_base(void)
 {
     if (width)
         return val_base_addr_ipa(width);
@@ -52,7 +53,7 @@ void *val_get_shared_region_base(void)
 void val_set_status(uint32_t status)
 {
     uint8_t state = ((status >> TEST_STATE_SHIFT) & TEST_STATE_MASK);
-    uint8_t *shared_region_base = (uint8_t *)val_get_shared_region_base();
+    uint8_t *shared_region_base = val_get_shared_region_base();
     val_test_status_buffer_ts *curr_test_status =
         (val_test_status_buffer_ts *)(shared_region_base + TEST_STATUS_OFFSET);
 
@@ -67,7 +68,7 @@ void val_set_status(uint32_t status)
 **/
 uint32_t val_get_status(void)
 {
-    uint8_t *shared_region_base = (uint8_t *)val_get_shared_region_base();
+    uint8_t *shared_region_base = val_get_shared_region_base();
     val_test_status_buffer_ts *curr_test_status =
         (val_test_status_buffer_ts *)(shared_region_base + TEST_STATUS_OFFSET);
     return (uint32_t)(((curr_test_status->state) << TEST_STATE_SHIFT) |
