@@ -5,6 +5,8 @@
  *
  */
 
+#include <limits.h>
+
 #include "val_common_status.h"
 #include "val_common_log.h"
 
@@ -15,10 +17,24 @@ static uint64_t width;
  *   @param    ipa_width      - Realm IPA width
  *   @return   IPA address of the shared region
 **/
-void *val_base_addr_ipa(uint64_t ipa_width)
+uint8_t *val_base_addr_ipa(uint64_t ipa_width)
 {
+    const uint64_t ptr_bit_width = (uint64_t)(sizeof(uintptr_t) * CHAR_BIT);
+    const uint64_t max_supported_width =
+        (ptr_bit_width < 64ull) ? ptr_bit_width : 64ull;
+
+    if ((ipa_width == 0ull) || (ipa_width > max_supported_width)) {
+        val_printf(ERROR,
+            "Invalid IPA width (%llu). Using shared region base PA.\n",
+            (unsigned long long)ipa_width);
+        width = 0;
+        return val_get_shared_region_base_pa();
+    }
+
     width = ipa_width;
-    return ((void *)(uintptr_t)(VAL_NS_SHARED_REGION_IPA_OFFSET | (1ull << (width - 1))));
+    uintptr_t ipa_addr = (uintptr_t)(VAL_NS_SHARED_REGION_IPA_OFFSET |
+                        (1ull << (width - 1ull)));
+    return (uint8_t *)ipa_addr;
 }
 
 /**
@@ -26,9 +42,9 @@ void *val_base_addr_ipa(uint64_t ipa_width)
  *   @param    Void
  *   @return   Physical address of the shared region
 **/
-void *val_get_shared_region_base_pa(void)
+uint8_t *val_get_shared_region_base_pa(void)
 {
-    return ((void *)(PLATFORM_SHARED_REGION_BASE));
+    return (uint8_t *)(uintptr_t)(PLATFORM_SHARED_REGION_BASE);
 }
 
 /**
@@ -36,7 +52,7 @@ void *val_get_shared_region_base_pa(void)
  *   @param    Void
  *   @return   Base address of the shared region
 **/
-void *val_get_shared_region_base(void)
+uint8_t *val_get_shared_region_base(void)
 {
     if (width)
         return val_base_addr_ipa(width);
@@ -52,8 +68,9 @@ void *val_get_shared_region_base(void)
 void val_set_status(uint32_t status)
 {
     uint8_t state = ((status >> TEST_STATE_SHIFT) & TEST_STATE_MASK);
-    val_test_status_buffer_ts *curr_test_status = (val_get_shared_region_base()
-                                                  + TEST_STATUS_OFFSET);
+    uint8_t *shared_region_base = val_get_shared_region_base();
+    val_test_status_buffer_ts *curr_test_status =
+        (val_test_status_buffer_ts *)(shared_region_base + TEST_STATUS_OFFSET);
 
     curr_test_status->state = state;
     curr_test_status->status_code  = (status & TEST_STATUS_CODE_MASK);
@@ -66,8 +83,9 @@ void val_set_status(uint32_t status)
 **/
 uint32_t val_get_status(void)
 {
-    val_test_status_buffer_ts *curr_test_status = (val_get_shared_region_base()
-                                                   + TEST_STATUS_OFFSET);
+    uint8_t *shared_region_base = val_get_shared_region_base();
+    val_test_status_buffer_ts *curr_test_status =
+        (val_test_status_buffer_ts *)(shared_region_base + TEST_STATUS_OFFSET);
     return (uint32_t)(((curr_test_status->state) << TEST_STATE_SHIFT) |
             (curr_test_status->status_code));
 }
