@@ -22,9 +22,9 @@ typedef struct {
 //MSB is set at runtime based on ipa_width selected
 #define VAL_NS_SHARED_REGION_IPA_OFFSET 0x700000
 
-void *val_base_addr_ipa(uint64_t ipa_width);
-void *val_get_shared_region_base_pa(void);
-void *val_get_shared_region_base(void);
+uint8_t *val_base_addr_ipa(uint64_t ipa_width);
+uint8_t *val_get_shared_region_base_pa(void);
+uint8_t *val_get_shared_region_base(void);
 void val_set_status(uint32_t status);
 uint32_t val_get_status(void);
 uint32_t val_report_status(void);
